@@ -1,6 +1,6 @@
 import { User, Organization, Appointment, Booking, TimeSlot, Notification } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://odooxspit-appointment-app.onrender.com";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -126,10 +126,14 @@ class ApiClient {
 
       // Network error (fetch failed)
       const networkError: any = new Error(
-        error.message || "Network error. Please check your internet connection and API server."
+        error.name === "AbortError"
+          ? "Request timed out. Please check your API server or network connection."
+          : error.message || "Network error. Please check your internet connection and API server."
       );
       networkError.isNetworkError = true;
       throw networkError;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
