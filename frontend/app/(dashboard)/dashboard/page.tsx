@@ -53,13 +53,13 @@ export default function UserDashboardPage() {
     return (
         <div className="w-full py-6 space-y-8">
             {/* Hero Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/10 via-red-500/5 to-background border p-8">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-red-500/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border p-8">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                        <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
                             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
                         <div className="space-y-1">
@@ -82,13 +82,13 @@ export default function UserDashboardPage() {
             {/* Quick Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Link href="/search" className="group">
-                    <Card className="h-full hover:shadow-lg hover:border-rose-500/50 transition-all duration-300 cursor-pointer bg-gradient-to-br from-rose-500/5 to-transparent">
+                    <Card className="h-full hover:shadow-lg hover:border-primary/50 transition-all duration-300 cursor-pointer bg-gradient-to-br from-primary/5 to-transparent">
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
-                                <div className="p-2.5 bg-rose-500/10 rounded-xl group-hover:bg-rose-500/20 transition-colors">
-                                    <Search className="h-5 w-5 text-rose-500" />
+                                <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                                    <Search className="h-5 w-5 text-primary" />
                                 </div>
-                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-rose-500 group-hover:translate-x-1 transition-all" />
+                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                             </div>
                             <h3 className="font-semibold mt-4 text-lg">Find Appointments</h3>
                             <p className="text-sm text-muted-foreground mt-1">Browse and book new appointments</p>
@@ -97,13 +97,13 @@ export default function UserDashboardPage() {
                 </Link>
 
                 <Link href="/dashboard/user/appointments" className="group">
-                    <Card className="h-full hover:shadow-lg hover:border-red-500/50 transition-all duration-300 cursor-pointer bg-gradient-to-br from-red-500/5 to-transparent">
+                    <Card className="h-full hover:shadow-lg hover:border-primary/50 transition-all duration-300 cursor-pointer bg-gradient-to-br from-primary/5 to-transparent">
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
-                                <div className="p-2.5 bg-red-500/10 rounded-xl group-hover:bg-red-500/20 transition-colors">
-                                    <Calendar className="h-5 w-5 text-red-500" />
+                                <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                                    <Calendar className="h-5 w-5 text-primary" />
                                 </div>
-                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
+                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                             </div>
                             <h3 className="font-semibold mt-4 text-lg">My Bookings</h3>
                             <p className="text-sm text-muted-foreground mt-1">View your upcoming appointments</p>
@@ -112,13 +112,13 @@ export default function UserDashboardPage() {
                 </Link>
 
                 <Link href="/dashboard/profile" className="group">
-                    <Card className="h-full hover:shadow-lg hover:border-rose-500/50 transition-all duration-300 cursor-pointer bg-gradient-to-br from-rose-500/5 to-transparent">
+                    <Card className="h-full hover:shadow-lg hover:border-primary/50 transition-all duration-300 cursor-pointer bg-gradient-to-br from-primary/5 to-transparent">
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
-                                <div className="p-2.5 bg-rose-500/10 rounded-xl group-hover:bg-rose-500/20 transition-colors">
-                                    <User className="h-5 w-5 text-rose-500" />
+                                <div className="p-2.5 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                                    <User className="h-5 w-5 text-primary" />
                                 </div>
-                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-rose-500 group-hover:translate-x-1 transition-all" />
+                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                             </div>
                             <h3 className="font-semibold mt-4 text-lg">My Profile</h3>
                             <p className="text-sm text-muted-foreground mt-1">Update your personal details</p>
@@ -145,7 +145,7 @@ export default function UserDashboardPage() {
                     <CardContent className="space-y-6">
                         {/* Profile Summary */}
                         <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
-                            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white text-2xl font-bold">
+                            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-2xl font-bold">
                                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -214,15 +214,15 @@ export default function UserDashboardPage() {
 
                         <div className="space-y-3">
                             <div className="flex items-center gap-2 text-sm">
-                                <Star className="h-4 w-4 text-rose-500" />
+                                <Star className="h-4 w-4 text-primary" />
                                 <span>Create unlimited appointments</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <Star className="h-4 w-4 text-rose-500" />
+                                <Star className="h-4 w-4 text-primary" />
                                 <span>Manage team members</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <Star className="h-4 w-4 text-rose-500" />
+                                <Star className="h-4 w-4 text-primary" />
                                 <span>Track bookings & analytics</span>
                             </div>
                         </div>
@@ -238,11 +238,11 @@ export default function UserDashboardPage() {
             </div>
 
             {/* Tips Section */}
-            <Card className="bg-gradient-to-r from-rose-500/5 via-red-500/5 to-rose-500/5 border-rose-500/20">
+            <Card className="bg-gradient-to-r from-primary/5 via-primary/5 to-primary/5 border-primary/20">
                 <CardContent className="py-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                        <div className="p-3 bg-rose-500/10 rounded-xl">
-                            <Heart className="h-6 w-6 text-rose-500" />
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                            <Heart className="h-6 w-6 text-primary" />
                         </div>
                         <div className="flex-1">
                             <h3 className="font-semibold text-lg">Quick Tip</h3>

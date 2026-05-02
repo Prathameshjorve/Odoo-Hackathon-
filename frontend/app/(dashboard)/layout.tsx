@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Navbar from "@/components/dashboard/navbar";
+import Sidebar from "@/components/dashboard/sidebar";
 import { authStorage, clearAuthData } from "@/lib/auth";
 import { userApi } from "@/lib/api";
 import { User } from "@/lib/types";
@@ -135,9 +136,15 @@ export default function DashboardLayout({
   return (
     <>
     <UserProvider user={user} isLoading={isChecking}>
-      <div className="max-w-[1600px] mx-auto px-4">
-      <Navbar />
-      <div className="">{children}</div>
+      <div className="flex flex-col min-h-screen bg-muted/40 max-w-[1600px] mx-auto px-4 relative">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-background via-muted/20 to-background" />
+        <Navbar />
+        <div className="flex flex-1 gap-6">
+          <aside className="w-64 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto hidden lg:block border-r pr-2">
+            <Sidebar />
+          </aside>
+          <main className="flex-1 overflow-y-auto pb-10">{children}</main>
+        </div>
       </div>
     </UserProvider>
     </>

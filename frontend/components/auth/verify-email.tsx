@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { authApi } from "@/lib/api";
 
 export default function VerifyEmailPage() {
@@ -56,5 +57,29 @@ export default function VerifyEmailPage() {
   }
 
   // Default page - showing "check your email" message
-  return null;
+  return (
+    <div className="flex flex-col items-center justify-center space-y-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="size-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+        <Loader className="size-8 text-primary" />
+      </div>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Verify your email</h1>
+        <p className="text-muted-foreground text-lg max-w-[400px]">
+          We've sent a verification link to your email address. Please check your inbox and click the link to activate your account.
+        </p>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-[400px]">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => router.push("/login")}
+        >
+          Back to Login
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground mt-8">
+        Didn't receive an email? Check your spam folder or contact support.
+      </p>
+    </div>
+  );
 }

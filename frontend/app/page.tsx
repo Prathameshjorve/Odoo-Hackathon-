@@ -40,7 +40,7 @@ export default function Home() {
         <div className=" flex h-16 items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-2">
             <Calendar className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">BookEasy</span>
+            <span className="text-xl font-bold">BookFastX</span>
           </div>
           <nav className="flex items-center gap-3">
             <ModeToggle />
@@ -79,7 +79,7 @@ export default function Home() {
           {/* Main Heading */}
           <div className="space-y-6 animate-in fade-in slide-in-from-top-6 duration-1000 delay-150">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight">
-              Book Easy,
+              BookFastX,
               <br />
               <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 Work Stress-Free
@@ -100,7 +100,7 @@ export default function Home() {
             </Link>
             <Link href="/search">
               <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 py-6 font-semibold border-2 hover:bg-accent">
-                <Calendar />Book Easy
+                <Calendar />BookFastX
               </Button>
             </Link>
           </div>
@@ -191,7 +191,7 @@ export default function Home() {
                 Ready to Transform Your Scheduling?
               </h2>
               <p className="text-lg text-primary-foreground/90 max-w-2xl mx-auto">
-                Join thousands of teams already using BookEasy to manage their appointments seamlessly.
+                Join thousands of teams already using BookFastX to manage their appointments seamlessly.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
                 <Link href="/register">
@@ -218,7 +218,7 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-6 w-6 text-primary" />
-                <span className="text-lg font-bold">BookEasy</span>
+                <span className="text-lg font-bold">BookFastX</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 The smart way to book, manage, and optimize your appointments.
@@ -250,7 +250,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-            <p>&copy; 2026 BookEasy. All rights reserved.</p>
+            <p>&copy; 2026 BookFastX. All rights reserved.</p>
           </div>
         </div>
       </footer>

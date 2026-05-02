@@ -13,20 +13,10 @@ import {
 } from "@/components/ui/navigation-menu"
 import { Separator } from "@/components/ui/separator"
 import {
-  BellIcon,
   Calendar,
-  
-  CalendarCheck,
-  Users,
-  BarChart3,
   SlashIcon,
   LogOut,
-  Settings,
   User,
-  UserCog,
-  Home,
-  CreditCard,
-  Briefcase,
 } from "lucide-react"
 import {
   Popover,
@@ -48,32 +38,13 @@ import { GetUserData, clearAuthData } from "@/lib/auth";
 import NotificationDropdown from "./notification-dropdown";
 import { useRouter } from "next/navigation";
 import { ModeToggle } from "../theme-toggle";
+import { navigationByRole } from "@/lib/navigation-config";
 
 // ---------------------- Types ----------------------
 type UserRole = "customer" | "organizer" | "admin";
 
 // ---------------------- Navigation Config ----------------------
-const navigationByRole = {
-  customer: [
-    { href: "/dashboard", label: "Home", icon: Home },
-    { href: "/dashboard/user/appointments", label: "My Appointments", icon: CalendarCheck },
-    { href: "/search", label: "Book Appointments", icon: Calendar },
-  ],
-  organizer: [
-    { href: "/dashboard", label: "Dashboard", icon: Home },
-    { href: "/dashboard/org/appointments", label: "Appointments", icon: CalendarCheck },
-    { href: "/dashboard/org/all-appointments", label: "Booked Appointments", icon: CalendarCheck },
-    { href: "/dashboard/org/resources", label: "Resources", icon: Briefcase },
-    { href: "/dashboard/org/users", label: "Team", icon: Users },
-    { href: "/dashboard/org/payments", label: "Payments", icon: CreditCard },
-    { href: "/dashboard/org/settings", label: "Settings", icon: Settings },
-  ],
-  admin: [
-    { href: "/dashboard/admin", label: "Admin Dashboard", icon: Home },
-    { href: "/dashboard/admin/users", label: "User Management", icon: UserCog },
-    { href: "/dashboard/admin/reports", label: "Reports & Analytics", icon: BarChart3 },
-  ],
-};
+
 
 // Mobile navigation structure
 const getMobileNav = (role: UserRole) => {
@@ -273,11 +244,11 @@ export default function Navbar() {
   } | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  const userRole = userData?.role || "customer";
+  const userRole = userData?.isAdmin ? "admin" : userData?.role === "ORGANIZATION" ? "organizer" : "customer";
   const userName = userData?.name || "";
   const userEmail = userData?.email || "";
-  const navigationLinks = userData ? navigationByRole[userData.role] : [];
-  const mobileNavStructure = userData ? getMobileNav(userData.role) : [{ name: "Main", items: [] }];
+  const navigationLinks = userData ? navigationByRole[userRole] : [];
+  const mobileNavStructure = userData ? getMobileNav(userRole) : [{ name: "Main", items: [] }];
 
   const handleLogout = React.useCallback(() => {
     clearAuthData();
@@ -312,7 +283,7 @@ export default function Navbar() {
   }, [router]);
 
   return (
-    <header className="sticky top-0 z-50 border-border w-full flex-col items-center justify-between gap-3 border-b bg-background ">
+    <header className="sticky top-0 z-50 border-border w-full flex-col items-center justify-between gap-3 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="flex w-full items-center justify-between gap-4 h-16">
         <div className="flex flex-1 items-center justify-start gap-2">
           <Link
@@ -331,7 +302,7 @@ export default function Navbar() {
           <MobileNav nav={mobileNavStructure} />
 
           <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="font-bold text-lg hidden sm:inline-block">BookEasy</span>
+            <span className="font-bold text-lg hidden sm:inline-block">BookFastX</span>
           </Link>
         </div>
 
@@ -365,42 +336,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="flex w-full items-center justify-start pb-1.5">
-        <NavigationMenu className="max-md:hidden">
-          <NavigationMenuList>
-            {isLoading ? (
-              // Loading skeletons - show 5 as typical count
-              Array.from({ length: 5 }).map((_, index) => (
-                <NavigationMenuItem key={index}>
-                  <div className="flex items-center gap-2 rounded-md px-3 py-1.5">
-                    <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                </NavigationMenuItem>
-              ))
-            ) : (
-              // Actual navigation items
-              navigationLinks.map((link, index) => {
-                const Icon = link.icon;
-                const isActive = pathname === link.href;
 
-                return (
-                  <NavigationMenuItem key={index} asChild>
-                    <Link
-                      href={link.href}
-                      data-active={isActive}
-                      className="text-foreground/60 data-[active=true]:text-accent-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-normal transition-all outline-none focus-visible:ring-[3px] data-[active=true]:relative"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {link.label}
-                    </Link>
-                  </NavigationMenuItem>
-                );
-              })
-            )}
-          </NavigationMenuList>
-        </NavigationMenu>
-      </div>
     </header>
   )
 }

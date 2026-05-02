@@ -17,3 +17,54 @@
 2026-05-02 15:57:57.978 IST [13524] LOG:  checkpoint complete: wrote 3 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 1 recycled; write=0.002 s, sync=0.003 s, total=0.011 s; sync files=4, longest=0.001 s, average=0.001 s; distance=5273 kB, estimate=8320 kB; lsn=0/3178648, redo lsn=0/31785F0
 2026-05-02 15:57:58.017 IST [1912] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
 	
+2026-05-02 16:02:57.985 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 16:03:15.223 IST [13524] LOG:  checkpoint complete: wrote 157 buffers (1.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=17.171 s, sync=0.051 s, total=17.239 s; sync files=60, longest=0.003 s, average=0.001 s; distance=1005 kB, estimate=7588 kB; lsn=0/3273DF8, redo lsn=0/3273DA0
+2026-05-02 16:04:40.910 IST [2032] ERROR:  unterminated quoted identifier at or near "" emailVerified\" at character 19
+2026-05-02 16:04:40.910 IST [2032] STATEMENT:  SELECT id, email, " emailVerified\
+2026-05-02 16:04:44.526 IST [20616] ERROR:  column "id" does not exist at character 8
+2026-05-02 16:04:44.526 IST [20616] STATEMENT:  SELECT id, email, emailVerified FROM User;
+2026-05-02 16:04:52.885 IST [22068] ERROR:  unterminated quoted identifier at or near "" emailVerified\" at character 19
+2026-05-02 16:04:52.885 IST [22068] STATEMENT:  SELECT id, email, " emailVerified\
+2026-05-02 16:04:57.076 IST [28784] ERROR:  column "id" does not exist at character 8
+2026-05-02 16:04:57.076 IST [28784] STATEMENT:  SELECT id, email, 
+	emailVerified
+2026-05-02 16:07:57.235 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 16:07:59.027 IST [13524] LOG:  checkpoint complete: wrote 16 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=1.748 s, sync=0.025 s, total=1.792 s; sync files=11, longest=0.010 s, average=0.003 s; distance=38 kB, estimate=6833 kB; lsn=0/327D8A0, redo lsn=0/327D848
+2026-05-02 16:10:50.777 IST [11524] LOG:  could not receive data from client: An established connection was aborted by the software in your host machine.
+	
+2026-05-02 16:10:51.231 IST [13524] LOG:  checkpoint starting: immediate force wait
+2026-05-02 16:10:51.252 IST [13524] LOG:  checkpoint complete: wrote 4 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.004 s, sync=0.008 s, total=0.021 s; sync files=5, longest=0.004 s, average=0.002 s; distance=5307 kB, estimate=6681 kB; lsn=0/37AC5F8, redo lsn=0/37AC5A0
+2026-05-02 16:10:51.703 IST [13524] LOG:  checkpoint starting: immediate force wait
+2026-05-02 16:10:51.734 IST [13524] LOG:  checkpoint complete: wrote 28 buffers (0.2%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.019 s, total=0.032 s; sync files=14, longest=0.004 s, average=0.002 s; distance=5466 kB, estimate=6559 kB; lsn=0/3D02F28, redo lsn=0/3D02ED0
+2026-05-02 16:10:52.014 IST [19048] FATAL:  terminating connection due to administrator command
+2026-05-02 16:10:52.129 IST [13524] LOG:  checkpoint starting: immediate force wait
+2026-05-02 16:10:52.157 IST [13524] LOG:  checkpoint complete: wrote 3 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 1 recycled; write=0.007 s, sync=0.006 s, total=0.028 s; sync files=4, longest=0.002 s, average=0.002 s; distance=5304 kB, estimate=6434 kB; lsn=0/4231130, redo lsn=0/42310D8
+2026-05-02 16:10:52.719 IST [13524] LOG:  checkpoint starting: immediate force wait
+2026-05-02 16:10:52.739 IST [13524] LOG:  checkpoint complete: wrote 3 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.004 s, sync=0.005 s, total=0.020 s; sync files=4, longest=0.002 s, average=0.002 s; distance=5304 kB, estimate=6321 kB; lsn=0/475F420, redo lsn=0/475F3C8
+2026-05-02 16:10:52.803 IST [24124] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-05-02 16:10:57.566 IST [18024] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-05-02 16:10:57.567 IST [24148] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-05-02 16:15:52.742 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 16:15:56.506 IST [13524] LOG:  checkpoint complete: wrote 34 buffers (0.2%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=3.725 s, sync=0.032 s, total=3.765 s; sync files=31, longest=0.004 s, average=0.002 s; distance=103 kB, estimate=5699 kB; lsn=0/4779060, redo lsn=0/4779008
+2026-05-02 17:26:02.408 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 17:26:03.326 IST [13524] LOG:  checkpoint complete: wrote 8 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.876 s, sync=0.015 s, total=0.919 s; sync files=9, longest=0.003 s, average=0.002 s; distance=4 kB, estimate=5129 kB; lsn=0/477A0C0, redo lsn=0/477A068
+2026-05-02 17:28:15.699 IST [1836] LOG:  could not reserve shared memory region (addr=000001EFE4A90000) for child 000000000000135C: error code 487
+2026-05-02 17:31:02.327 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 17:31:03.124 IST [13524] LOG:  checkpoint complete: wrote 7 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.772 s, sync=0.013 s, total=0.798 s; sync files=8, longest=0.005 s, average=0.002 s; distance=4 kB, estimate=4617 kB; lsn=0/477B318, redo lsn=0/477B2C0
+2026-05-02 17:36:02.127 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 17:36:02.806 IST [13524] LOG:  checkpoint complete: wrote 6 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.662 s, sync=0.009 s, total=0.679 s; sync files=7, longest=0.004 s, average=0.002 s; distance=4 kB, estimate=4156 kB; lsn=0/477C4F0, redo lsn=0/477C498
+2026-05-02 17:41:02.818 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 17:41:03.837 IST [13524] LOG:  checkpoint complete: wrote 9 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.980 s, sync=0.022 s, total=1.020 s; sync files=10, longest=0.007 s, average=0.003 s; distance=3 kB, estimate=3740 kB; lsn=0/477D188, redo lsn=0/477D130
+2026-05-02 17:46:02.850 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 17:46:03.869 IST [13524] LOG:  checkpoint complete: wrote 9 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.977 s, sync=0.022 s, total=1.019 s; sync files=10, longest=0.007 s, average=0.003 s; distance=3 kB, estimate=3367 kB; lsn=0/477E0E8, redo lsn=0/477E090
+2026-05-02 17:51:02.885 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 17:51:03.903 IST [13524] LOG:  checkpoint complete: wrote 9 buffers (0.1%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.987 s, sync=0.018 s, total=1.018 s; sync files=10, longest=0.008 s, average=0.002 s; distance=5 kB, estimate=3030 kB; lsn=0/477F790, redo lsn=0/477F738
+2026-05-02 17:56:02.912 IST [13524] LOG:  checkpoint starting: time
+2026-05-02 17:56:03.594 IST [13524] LOG:  checkpoint complete: wrote 6 buffers (0.0%), wrote 1 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.661 s, sync=0.011 s, total=0.683 s; sync files=7, longest=0.005 s, average=0.002 s; distance=5 kB, estimate=2728 kB; lsn=0/4780E70, redo lsn=0/4780E18
+2026-05-02 18:02:54.080 IST [29088] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-05-02 18:02:54.080 IST [25548] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
