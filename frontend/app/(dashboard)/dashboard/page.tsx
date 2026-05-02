@@ -129,8 +129,8 @@ export default function UserDashboardPage() {
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Account Information - Takes 2 columns */}
-                <Card className="lg:col-span-2 hover:shadow-lg transition-shadow duration-300">
+                {/* Account Information */}
+                <Card className="lg:col-span-3 hover:shadow-lg transition-shadow duration-300">
                     <CardHeader>
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-primary/10 rounded-lg">
@@ -188,53 +188,7 @@ export default function UserDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Upgrade Card - Takes 1 column */}
-                <Card className="relative overflow-hidden hover:shadow-lg transition-shadow duration-300 border-primary/20">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
 
-                    <CardHeader className="relative">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <Sparkles className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle>Upgrade Account</CardTitle>
-                                <CardDescription>Unlock more features</CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="relative space-y-5">
-                        <div className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/10">
-                            <Building2 className="h-10 w-10 text-primary mb-3" />
-                            <h3 className="font-semibold text-lg">Become an Organization</h3>
-                            <p className="text-sm text-muted-foreground mt-2">
-                                Create appointments, manage resources, and grow your business.
-                            </p>
-                        </div>
-
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm">
-                                <Star className="h-4 w-4 text-primary" />
-                                <span>Create unlimited appointments</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <Star className="h-4 w-4 text-primary" />
-                                <span>Manage team members</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <Star className="h-4 w-4 text-primary" />
-                                <span>Track bookings & analytics</span>
-                            </div>
-                        </div>
-
-                        <Button className="w-full" asChild>
-                            <Link href="/dashboard/user/convert-user">
-                                <Building2 className="h-4 w-4 mr-2" />
-                                Convert to Organization
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
             </div>
 
             {/* Tips Section */}

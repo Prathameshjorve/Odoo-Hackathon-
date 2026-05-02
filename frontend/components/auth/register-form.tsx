@@ -10,8 +10,9 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader, AlertCircle } from "lucide-react";
+import { Loader, AlertCircle, Building2, User as UserIcon } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function RegisterForm({
   className,
@@ -21,6 +22,9 @@ export function RegisterForm({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [orgName, setOrgName] = useState("");
+  const [orgLocation, setOrgLocation] = useState("");
+  const [role, setRole] = useState<"USER" | "ORGANIZATION">("USER");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,12 +34,33 @@ export function RegisterForm({
     setError("");
 
     try {
-      const response = await authApi.register({
+      const payload: any = {
         name,
         email,
         password,
-        role: "USER", // Default role as USER
-      });
+        role,
+      };
+
+      if (role === "ORGANIZATION") {
+        if (!orgName || !orgLocation) {
+          setError("Organization Name and Location are required");
+          setIsPending(false);
+          return;
+        }
+        payload.business = {
+          name: orgName,
+          location: orgLocation,
+          businessHours: [
+            { day: "Monday", open: "09:00", close: "17:00" },
+            { day: "Tuesday", open: "09:00", close: "17:00" },
+            { day: "Wednesday", open: "09:00", close: "17:00" },
+            { day: "Thursday", open: "09:00", close: "17:00" },
+            { day: "Friday", open: "09:00", close: "17:00" },
+          ]
+        };
+      }
+
+      const response = await authApi.register(payload);
 
       if (response.success) {
         // Redirect to verification page
@@ -68,9 +93,51 @@ export function RegisterForm({
           </div>
         )}
 
+        {/* Role Selection Tabs */}
+        <Tabs value={role} onValueChange={(v) => setRole(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="USER" className="flex items-center gap-2">
+              <UserIcon className="w-4 h-4" />
+              Customer
+            </TabsTrigger>
+            <TabsTrigger value="ORGANIZATION" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Organization
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ORGANIZATION" className="mt-4 flex flex-col gap-4 animate-in fade-in duration-300">
+            {/* Organization Name */}
+            <Field>
+              <FieldLabel>Organization Name</FieldLabel>
+              <Input
+                placeholder="BookFastX Inc."
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                required={role === "ORGANIZATION"}
+                disabled={isPending}
+                className="transition-all duration-200 focus:ring-2"
+              />
+            </Field>
+
+            {/* Organization Location */}
+            <Field>
+              <FieldLabel>Location</FieldLabel>
+              <Input
+                placeholder="City, State"
+                value={orgLocation}
+                onChange={(e) => setOrgLocation(e.target.value)}
+                required={role === "ORGANIZATION"}
+                disabled={isPending}
+                className="transition-all duration-200 focus:ring-2"
+              />
+            </Field>
+          </TabsContent>
+        </Tabs>
+
         {/* Full Name */}
         <Field>
-          <FieldLabel>Full Name</FieldLabel>
+          <FieldLabel>{role === "ORGANIZATION" ? "Admin Full Name" : "Full Name"}</FieldLabel>
           <Input
             placeholder="John Doe"
             value={name}

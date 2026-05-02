@@ -17,14 +17,14 @@ interface SidebarProps {
 export default function Sidebar({ orientation = "vertical" }: SidebarProps) {
   const pathname = usePathname();
   const { user, isLoading } = useUser();
-  
+
   // Map internal roles to navigation config keys
-  const role: UserRole = user?.isAdmin 
-    ? "admin" 
-    : user?.role === "ORGANIZATION" 
-      ? "organizer" 
+  const role: UserRole = user?.isAdmin
+    ? "admin"
+    : user?.role === "ORGANIZATION"
+      ? "organizer"
       : "customer";
-      
+
   const links = navigationByRole[role] || [];
 
   const isHorizontal = orientation === "horizontal";

@@ -10,6 +10,8 @@ const { sendVerificationEmail } = require('../lib/mailer');
 // Admin emails list - these users get super admin access
 const ADMIN_EMAILS = [
   "aryan@devally.in",
+  "prathameshjorve09@gmail.com",
+  "admin@bookfastx.com",
 ];
 
 /**
@@ -286,103 +288,9 @@ async function deleteAccount(req, res) {
   }
 }
 
-/**
- * Convert USER to ORGANIZATION
- */
-async function convertToOrganization(req, res) {
-  try {
-    const { business } = req.body;
-    const organization = business;
-    const userId = req.user.id;
-
-    // Fetch current user
-    const currentUser = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { adminOrganization: true },
-    });
-
-    // Check if user is already an ORGANIZATION
-    if (currentUser.role === 'ORGANIZATION') {
-      return res.status(400).json({
-        success: false,
-        message: 'User is already an ORGANIZATION.',
-      });
-    }
-
-    // Validate organization data
-    if (!organization || !organization.name || !organization.location) {
-      return res.status(400).json({
-        success: false,
-        message: 'Organization name and location are required.',
-      });
-    }
-
-    if (!organization.businessHours || !Array.isArray(organization.businessHours)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Business hours are required and must be an array.',
-      });
-    }
-
-    // Convert user to ORGANIZATION and create organization in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create organization
-      const newOrganization = await tx.organization.create({
-        data: {
-          name: organization.name,
-          location: organization.location,
-          businessHours: organization.businessHours,
-          description: organization.description || null,
-          adminId: userId,
-        },
-      });
-
-      // Update user role and link to organization
-      const updatedUser = await tx.user.update({
-        where: { id: userId },
-        data: {
-          role: 'ORGANIZATION',
-          isMember: false,
-          organizationId: newOrganization.id,
-        },
-      });
-
-      return { user: updatedUser, organization: newOrganization };
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Successfully converted to ORGANIZATION.',
-      data: {
-        user: {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.name,
-          role: result.user.role,
-          isMember: result.user.isMember,
-        },
-        organization: {
-          id: result.organization.id,
-          name: result.organization.name,
-          location: result.organization.location,
-          businessHours: result.organization.businessHours,
-          description: result.organization.description,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Convert to organization error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'An error occurred during conversion.',
-    });
-  }
-}
-
 module.exports = {
   getProfile,
   getMe,
   updateProfile,
   deleteAccount,
-  convertToOrganization,
 };

@@ -3,6 +3,8 @@ const prisma = require('../lib/prisma');
 // Admin emails list - these users get super admin access
 const ADMIN_EMAILS = [
     "aryan@devally.in",
+    "prathameshjorve09@gmail.com",
+    "admin@bookfastx.com",
 ];
 
 /**

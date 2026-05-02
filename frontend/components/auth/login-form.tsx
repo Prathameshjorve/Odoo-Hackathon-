@@ -60,6 +60,10 @@ export function LoginForm({
           user: data.user,
         });
 
+        // Clear input fields
+        setEmail("");
+        setPassword("");
+
         // Get redirect URL from query params or use default based on role
         const redirectParam = searchParams.get('redirect');
         // Type assertion to fix 'response.data' is of type 'unknown'

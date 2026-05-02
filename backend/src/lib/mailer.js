@@ -13,10 +13,25 @@ let transporter;
 /**
  * Initialize email transporter
  */
-function initializeMailer() {
+async function initializeMailer() {
   if (!SMTP_USER || !SMTP_PASS) {
-    console.warn('SMTP credentials not configured. Email functionality will not work.');
-    return null;
+    console.warn('SMTP credentials not configured. Using Ethereal for testing.');
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+          user: testAccount.user, // generated ethereal user
+          pass: testAccount.pass, // generated ethereal password
+        },
+      });
+      return transporter;
+    } catch (err) {
+      console.error('Failed to create Ethereal test account:', err);
+      return null;
+    }
   }
 
   transporter = nodemailer.createTransport({
@@ -42,12 +57,18 @@ async function sendEmail(to, subject, html) {
   }
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
       to,
       subject,
       html,
     });
+    
+    console.log('Email sent: %s', info.messageId);
+    if (!SMTP_USER || !SMTP_PASS) {
+      console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    }
+    
     return true;
   } catch (error) {
     console.error('Error sending email:', error.message);
