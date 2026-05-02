@@ -131,6 +131,7 @@ async function register(req, res) {
           name: name || null,
           role: userRole,
           isMember: false, // ORGANIZATION users start as admins
+          emailVerified: true, // Automatically verify for new users
         },
       });
 
@@ -165,18 +166,21 @@ async function register(req, res) {
     // Generate OTP
     const { otp, otpExpiry } = generateOtp();
 
-    // Save OTP to user
+    // Save OTP to user for any future needs
     await prisma.user.update({
       where: { id: result.user.id },
       data: {
         otp,
         otpExpiry,
-        emailVerified: false,
       },
     });
 
     // Send OTP email
-    await sendSignupOtpEmail(email, otp);
+    try {
+      await sendSignupOtpEmail(email, otp);
+    } catch (e) {
+      console.log("Failed to send OTP email, but continuing since verification is disabled");
+    }
 
     const responseData = {
       userId: result.user.id,
@@ -366,13 +370,13 @@ async function login(req, res) {
       });
     }
 
-    // Check if email is verified
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        success: false,
-        message: "Please verify your email before logging in.",
-      });
-    }
+    // Check if email is verified (REMOVED as requested)
+    // if (!user.emailVerified) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Please verify your email before logging in.",
+    //   });
+    // }
 
     // Generate access token
     const accessToken = generateAccessToken(user.id, user.email);
@@ -803,7 +807,13 @@ async function resendVerificationEmail(req, res) {
     );
 
     // Send verification email
-    await sendVerificationEmail(email, verificationToken);
+    const verificationEmailSent = await sendVerificationEmail(email, verificationToken);
+    if (!verificationEmailSent) {
+      return res.status(500).json({
+        success: false,
+        message: 'Verification email could not be sent. Configure SMTP in backend/.env and try again.',
+      });
+    }
 
     res.status(200).json({
       success: true,

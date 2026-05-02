@@ -9,6 +9,7 @@ const FROM_NAME = process.env.FROM_NAME || 'Auth API';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
 
 let transporter;
+let senderEmail = FROM_EMAIL || 'no-reply@bookfastx.local';
 
 /**
  * Initialize email transporter
@@ -18,6 +19,7 @@ async function initializeMailer() {
     console.warn('SMTP credentials not configured. Using Ethereal for testing.');
     try {
       const testAccount = await nodemailer.createTestAccount();
+      senderEmail = testAccount.user;
       transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
@@ -43,6 +45,7 @@ async function initializeMailer() {
       pass: SMTP_PASS,
     },
   });
+  senderEmail = FROM_EMAIL || SMTP_USER;
 
   return transporter;
 }
@@ -58,7 +61,7 @@ async function sendEmail(to, subject, html) {
 
   try {
     const info = await transporter.sendMail({
-      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+      from: `"${FROM_NAME}" <${senderEmail}>`,
       to,
       subject,
       html,

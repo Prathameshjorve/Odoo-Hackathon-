@@ -149,7 +149,13 @@ async function updateProfile(req, res) {
 
       // Generate and send verification email for new email
       const verificationToken = await createEmailVerificationToken(userId, email);
-      await sendVerificationEmail(email, verificationToken);
+      const verificationEmailSent = await sendVerificationEmail(email, verificationToken);
+      if (!verificationEmailSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Email was updated, but the verification email could not be sent. Configure SMTP in backend/.env and try again.',
+        });
+      }
     }
 
     // Update password

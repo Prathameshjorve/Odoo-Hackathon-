@@ -245,7 +245,7 @@ export default function Navbar() {
   } | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  const userRole = userData?.isAdmin ? "admin" : userData?.role === "ORGANIZATION" ? "organizer" : "customer";
+  const userRole = userData?.role || "customer";
   const userName = userData?.name || "";
   const userEmail = userData?.email || "";
   const navigationLinks = userData ? navigationByRole[userRole] : [];
