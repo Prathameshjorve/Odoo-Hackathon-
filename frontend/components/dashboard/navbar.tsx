@@ -38,6 +38,7 @@ import { GetUserData, clearAuthData } from "@/lib/auth";
 import NotificationDropdown from "./notification-dropdown";
 import { useRouter } from "next/navigation";
 import { ModeToggle } from "../theme-toggle";
+import Sidebar from "./sidebar";
 import { navigationByRole } from "@/lib/navigation-config";
 
 // ---------------------- Types ----------------------
@@ -304,6 +305,11 @@ export default function Navbar() {
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="font-bold text-lg hidden sm:inline-block">BookFastX</span>
           </Link>
+
+          {/* Desktop Navigation Links */}
+          <div className="hidden lg:flex flex-1 ml-8 overflow-hidden">
+            <Sidebar orientation="horizontal" />
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-4">
