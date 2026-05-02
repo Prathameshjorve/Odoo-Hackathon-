@@ -221,6 +221,10 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
       }
     }
 
+    if (Object.keys(newErrors).length > 0) {
+      newErrors.submit = "Please fix the highlighted errors below to continue.";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
