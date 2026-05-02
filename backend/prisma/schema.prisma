@@ -1,0 +1,325 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  password                String
+  name                    String?
+  emailVerified           Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  role                    Role                     @default(USER)
+  isMember                Boolean                  @default(false)
+  organizationId          String?
+  phone                   String?
+  emailVerificationTokens EmailVerificationToken[]
+  adminOrganization       Organization?            @relation("OrganizationAdmin")
+  passwordResetTokens     PasswordResetToken[]
+  refreshTokens           RefreshToken[]
+  organization            Organization?            @relation("OrganizationMembers", fields: [organizationId], references: [id])
+  allowedAppointments     Appointment[]            @relation("AppointmentAllowedUsers")
+  bookings                Booking[]
+  assignedBookings        Booking[]                @relation("AssignedBookings")
+  notifications           Notification[]
+
+  @@index([organizationId])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  userId     String
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  ipAddress  String?
+  userAgent  String?
+  deviceName String?
+  deviceType String?
+  browser    String?
+  os         String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, revoked])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  email     String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+}
+
+model Organization {
+  id                 String                          @id @default(cuid())
+  name               String
+  location           String
+  description        String?
+  businessHours      Json
+  adminId            String                          @unique
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+  appointments       Appointment[]
+  admin              User                            @relation("OrganizationAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  resources          Resource[]
+  members            User[]                          @relation("OrganizationMembers")
+  razorpayConnection OrganizationRazorpayConnection?
+  bolnaApiKey        String?
+  bolnaAgents        BolnaAgent[]
+  bolnaCalls         BolnaCall[]
+
+  @@index([adminId])
+}
+
+model Resource {
+  id                  String        @id @default(cuid())
+  name                String
+  capacity            Int
+  organizationId      String
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  organization        Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  allowedAppointments Appointment[] @relation("AppointmentAllowedResources")
+  bookings            Booking[]
+
+  @@index([organizationId])
+}
+
+model Appointment {
+  id                  String              @id @default(cuid())
+  title               String
+  description         String?
+  durationMinutes     Int
+  bookType            AppointmentBookType
+  assignmentType      AssignmentType
+  allowMultipleSlots  Boolean             @default(false)
+  maxSlotsPerBooking  Int?
+  price               Int?
+  cancellationHours   Int
+  schedule            Json
+  questions           Json
+  isPublished         Boolean             @default(false)
+  secretLink          String?             @unique
+  expiryTime          DateTime?
+  expiryCapacity      Int?
+  bookingsCount       Int                 @default(0)
+  confirmationMessage String?
+  introMessage        String?
+  isPaid              Boolean             @default(false)
+  location            String?
+  picture             String?
+  organizationId      String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  allowedResources    Resource[]          @relation("AppointmentAllowedResources")
+  allowedUsers        User[]              @relation("AppointmentAllowedUsers")
+  bookings            Booking[]
+
+  @@index([organizationId])
+  @@index([isPublished])
+  @@index([secretLink])
+}
+
+enum Role {
+  USER
+  ORGANIZATION
+}
+
+enum AppointmentBookType {
+  USER
+  RESOURCE
+}
+
+enum AssignmentType {
+  AUTOMATIC
+  BY_VISITOR
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum NotificationType {
+  APPOINTMENT_CREATED
+  APPOINTMENT_UPDATED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_PUBLISHED
+  APPOINTMENT_REMINDER
+  MEMBER_ADDED
+  MEMBER_REMOVED
+  RESOURCE_CREATED
+  RESOURCE_DELETED
+  ORGANIZATION_UPDATED
+  INVITATION_RECEIVED
+  BOOKING_CREATED
+  BOOKING_CANCELLED
+  BOOKING_CONFIRMED
+  BOOKING_REJECTED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  EMAIL_VERIFIED
+  PASSWORD_CHANGED
+  SYSTEM_ANNOUNCEMENT
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  read        Boolean          @default(false)
+  userId      String
+  relatedId   String?
+  relatedType String?
+  actionUrl   String?
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model Booking {
+  id             String        @id @default(cuid())
+  appointmentId  String
+  userId         String
+  resourceId     String?
+  assignedUserId String?
+  startTime      DateTime
+  endTime        DateTime
+  numberOfSlots  Int           @default(1)
+  userResponses  Json?
+  paymentStatus  PaymentStatus @default(PENDING)
+  bookingStatus  BookingStatus @default(PENDING)
+  totalAmount    Int?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  appointment    Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource       Resource?     @relation(fields: [resourceId], references: [id])
+  assignedUser   User?         @relation("AssignedBookings", fields: [assignedUserId], references: [id])
+
+  @@index([appointmentId])
+  @@index([userId])
+  @@index([resourceId])
+  @@index([assignedUserId])
+  @@index([startTime])
+  @@index([bookingStatus])
+}
+
+model OrganizationRazorpayConnection {
+  id                 String   @id @default(cuid())
+  organizationId     String   @unique
+  razorpayMerchantId String
+  accessToken        String
+  refreshToken       String
+  tokenExpiresAt     DateTime
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  // Optional public key (safe to expose to frontend for Checkout)
+  merchantKeyId      String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([razorpayMerchantId])
+}
+
+model BolnaAgent {
+  id              String      @id @default(cuid())
+  organizationId  String
+  bolnaAgentId    String      @unique
+  name            String
+  welcomeMessage  String      @db.Text
+  instructions    String      @db.Text
+  language        String      @default("en")
+  voiceId         String?
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  calls           BolnaCall[]
+
+  @@index([organizationId])
+}
+
+model BolnaCall {
+  id              String          @id @default(cuid())
+  organizationId  String
+  agentId         String
+  bolnaCallId     String?         @unique
+  recipientPhone  String
+  status          BolnaCallStatus @default(INITIATED)
+  duration        Int?
+  recordingUrl    String?
+  transcript      String?         @db.Text
+  errorMessage    String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  completedAt     DateTime?
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent           BolnaAgent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum BolnaCallStatus {
+  INITIATED
+  RINGING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NO_ANSWER
+  BUSY
+  CANCELLED
+}
