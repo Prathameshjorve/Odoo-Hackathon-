@@ -35,9 +35,12 @@ import {
   Users,
   HelpCircle,
   X,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react";
 import { organizationApi, mediaApi, userApi } from "@/lib/api";
 import { authStorage } from "@/lib/auth";
+import { useUser } from "@/contexts/UserContext";
 
 interface TimeSlot {
   id: string;
@@ -98,6 +101,7 @@ interface AppointmentTypeFormData {
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export function CreateAppointment({ onBack }: { onBack?: () => void }) {
+  const { user } = useUser();
   const [currentTab, setCurrentTab] = useState("schedule");
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -573,6 +577,23 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
               </CardContent>
             </Card>
 
+            {/* Description Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-medium">Description</CardTitle>
+                <CardDescription>Add additional details about this appointment type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  id="description"
+                  placeholder="e.g., This session covers basic dental hygiene and checkup..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                />
+              </CardContent>
+            </Card>
+
             {/* Duration and Location */}
             <Card>
               <CardContent className="pt-6 space-y-4">
@@ -805,6 +826,99 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
               </CardContent>
             </Card>
 
+            {/* Payment & Pricing Card */}
+            <Card className={formData.isPaid ? "border-primary/50 shadow-sm" : ""}>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  Payment & Pricing
+                </CardTitle>
+                <CardDescription>Configure if this is a paid appointment</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                  <input
+                    type="checkbox"
+                    id="isPaid"
+                    checked={formData.isPaid}
+                    onChange={(e) => setFormData({ ...formData, isPaid: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="isPaid" className="cursor-pointer font-medium">
+                      This is a paid appointment
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Users will be required to pay before their booking is confirmed.
+                    </p>
+                  </div>
+                </div>
+
+                {formData.isPaid && (
+                  <div className="space-y-6 animate-in slide-in-from-top-2 duration-200">
+                    {!user?.razorpayConnected && (
+                      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                        <div className="flex gap-3">
+                          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                              Razorpay Not Connected
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-300">
+                              Your organization hasn't connected a Razorpay account yet. You can still create a paid appointment, but users won't be able to complete bookings until Razorpay is connected in Settings.
+                            </p>
+                            <Button variant="link" size="sm" className="p-0 h-auto text-amber-800 dark:text-amber-200 gap-1" asChild>
+                              <a href="/settings" target="_blank">
+                                Go to Settings <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Price (USD)</Label>
+                        <div className="relative">
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="price"
+                            type="number"
+                            placeholder="0.00"
+                            value={formData.price}
+                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                            className="pl-10"
+                          />
+                        </div>
+                        {errors.price && (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.price}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="cancellationPolicy">Cancellation Window</Label>
+                        <select
+                          id="cancellationPolicy"
+                          value={formData.cancellationHours}
+                          onChange={(e) => setFormData({ ...formData, cancellationHours: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-md bg-background text-sm"
+                        >
+                          <option value="0">Users can cancel anytime</option>
+                          <option value="1">Up to 1 hour before</option>
+                          <option value="6">Up to 6 hours before</option>
+                          <option value="24">Up to 24 hours before</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Tabs Section */}
             <Card>
               <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
@@ -816,11 +930,8 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
                     <TabsTrigger value="questions" className="text-xs sm:text-sm py-2">
                       Questions
                     </TabsTrigger>
-                    <TabsTrigger value="options" className="text-xs sm:text-sm py-2">
-                      Options
-                    </TabsTrigger>
                     <TabsTrigger value="misc" className="text-xs sm:text-sm py-2">
-                      Misc
+                      Messaging
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
@@ -1029,69 +1140,6 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="options" className="mt-0 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="isPaid"
-                        checked={formData.isPaid}
-                        onChange={(e) => setFormData({ ...formData, isPaid: e.target.checked })}
-                        className="w-4 h-4"
-                      />
-                      <Label htmlFor="isPaid" className="cursor-pointer font-normal">
-                        This is a paid appointment
-                      </Label>
-                    </div>
-
-                    {formData.isPaid && (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="price">Price</Label>
-                          <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                              id="price"
-                              type="number"
-                              placeholder="0.00"
-                              value={formData.price}
-                              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                              className="pl-10"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="cancellationPolicy">Cancellation window (for users)</Label>
-                          <select
-                            id="cancellationPolicy"
-                            value={formData.cancellationHours}
-                            onChange={(e) => setFormData({ ...formData, cancellationHours: e.target.value })}
-                            className="px-3 py-2 border rounded-md bg-background w-full"
-                          >
-                            <option value="0">Users can cancel anytime before the start</option>
-                            <option value="1">Users can cancel up to 1 hour before</option>
-                            <option value="6">Users can cancel up to 6 hours before</option>
-                            <option value="24">Users can cancel up to 24 hours before</option>
-                          </select>
-                          <p className="text-xs text-muted-foreground">
-                            This policy applies only to paid appointments. Free appointments can always be
-                            cancelled anytime by users.
-                          </p>
-                        </div>
-                      </>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        placeholder="Add additional details about this appointment type..."
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        rows={4}
-                      />
-                    </div>
-                  </TabsContent>
 
                   <TabsContent value="misc" className="mt-0 space-y-4">
                     <div className="space-y-2">
