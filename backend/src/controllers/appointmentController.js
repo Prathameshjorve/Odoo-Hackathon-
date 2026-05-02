@@ -43,17 +43,10 @@ async function createAppointment(req, res) {
         });
 
         // Check if user is organization admin
-        if (!user || user.role !== 'ORGANIZATION' || user.isMember) {
+        if (!user || !user.adminOrganization || user.isMember) {
             return res.status(403).json({
                 success: false,
                 message: 'Only organization admins can create appointments.',
-            });
-        }
-
-        if (!user.adminOrganization) {
-            return res.status(400).json({
-                success: false,
-                message: 'User does not have an organization.',
             });
         }
 
@@ -477,7 +470,7 @@ async function publishAppointment(req, res) {
             include: { adminOrganization: true },
         });
 
-        if (!user || user.role !== 'ORGANIZATION' || user.isMember) {
+        if (!user || !user.adminOrganization || user.isMember) {
             return res.status(403).json({
                 success: false,
                 message: 'Only organization admins can publish appointments.',
@@ -561,7 +554,7 @@ async function unpublishAppointment(req, res) {
             include: { adminOrganization: true },
         });
 
-        if (!user || user.role !== 'ORGANIZATION' || user.isMember) {
+        if (!user || !user.adminOrganization || user.isMember) {
             return res.status(403).json({
                 success: false,
                 message: 'Only organization admins can unpublish appointments.',
@@ -619,7 +612,7 @@ async function generateSecretLinkForAppointment(req, res) {
             include: { adminOrganization: true },
         });
 
-        if (!user || user.role !== 'ORGANIZATION' || user.isMember) {
+        if (!user || !user.adminOrganization || user.isMember) {
             return res.status(403).json({
                 success: false,
                 message: 'Only organization admins can generate secret links.',
@@ -704,7 +697,7 @@ async function updateAppointment(req, res) {
             include: { adminOrganization: true },
         });
 
-        if (!user || user.role !== 'ORGANIZATION' || user.isMember) {
+        if (!user || !user.adminOrganization || user.isMember) {
             return res.status(403).json({
                 success: false,
                 message: 'Only organization admins can update appointments.',
