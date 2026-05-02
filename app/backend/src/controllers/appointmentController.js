@@ -1,8 +1,6 @@
-import Appointment from '../models/Appointment.js';
-import Service from '../models/Service.js';
-import Slot from '../models/Slot.js';
-import User from '../models/User.js';
+import { Appointment, Service, Slot, User } from '../models/index.js';
 import { sendResponse, sendError, getAvailableSlots, isWorkingDay } from '../utils/helpers.js';
+import { Op } from 'sequelize';
 
 export async function getAvailableSlotsByService(req, res) {
   try {
@@ -12,10 +10,8 @@ export async function getAvailableSlotsByService(req, res) {
       return sendError(res, 400, 'Please provide serviceId and date');
     }
 
-    const service = await Service.findById(serviceId);
-    if (!service) {
-      return sendError(res, 404, 'Service not found');
-    }
+    const service = await Service.findByPk(serviceId);
+    if (!service) return sendError(res, 404, 'Service not found');
 
     // Check if it's a working day
     if (!isWorkingDay(date, service.daysAvailable)) {
@@ -23,15 +19,9 @@ export async function getAvailableSlotsByService(req, res) {
     }
 
     // Get booked appointments for this date
-    const bookedAppointments = await Appointment.find({
-      service: serviceId,
-      date: {
-        $gte: new Date(date),
-        $lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000),
-      },
-      status: { $ne: 'cancelled' },
-    });
-
+    const start = new Date(date);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const bookedAppointments = await Appointment.findAll({ where: { serviceId: serviceId, date: { [Op.gte]: start, [Op.lt]: end }, status: { [Op.ne]: 'cancelled' } } });
     const bookedSlots = bookedAppointments.map((apt) => apt.startTime);
 
     // Generate available slots
@@ -53,21 +43,13 @@ export async function createAppointment(req, res) {
     }
 
     // Get service details
-    const service = await Service.findById(serviceId).populate('organiser');
-    if (!service) {
-      return sendError(res, 404, 'Service not found');
-    }
+    const service = await Service.findByPk(serviceId, { include: [{ model: User, as: 'organiser' }] });
+    if (!service) return sendError(res, 404, 'Service not found');
 
     // Check if slot is already booked
-    const existingAppointment = await Appointment.findOne({
-      service: serviceId,
-      date: {
-        $gte: new Date(date),
-        $lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000),
-      },
-      startTime,
-      status: { $ne: 'cancelled' },
-    });
+    const start = new Date(date);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const existingAppointment = await Appointment.findOne({ where: { serviceId: serviceId, date: { [Op.gte]: start, [Op.lt]: end }, startTime, status: { [Op.ne]: 'cancelled' } } });
 
     if (existingAppointment) {
       return sendError(res, 400, 'This slot is already booked');
@@ -75,9 +57,9 @@ export async function createAppointment(req, res) {
 
     // Create appointment
     const appointment = await Appointment.create({
-      service: serviceId,
-      organiser: service.organiser._id,
-      customer: customerId,
+      serviceId: serviceId,
+      organiserId: service.organiser.id,
+      customerId,
       date: new Date(date),
       startTime,
       endTime,
@@ -87,14 +69,13 @@ export async function createAppointment(req, res) {
       status: 'pending',
     });
 
-    // Populate appointment details
-    await appointment.populate([
-      { path: 'service', select: 'name duration price' },
-      { path: 'organiser', select: 'name email phone' },
-      { path: 'customer', select: 'name email phone' },
-    ]);
+    const created = await Appointment.findByPk(appointment.id, { include: [
+      { model: Service, as: 'service', attributes: ['id','name','duration','price'] },
+      { model: User, as: 'organiser', attributes: ['id','name','email','phone'] },
+      { model: User, as: 'customer', attributes: ['id','name','email','phone'] },
+    ] });
 
-    sendResponse(res, 201, true, appointment, 'Appointment created successfully');
+    sendResponse(res, 201, true, created, 'Appointment created successfully');
   } catch (error) {
     sendError(res, 500, error.message);
   }
@@ -105,24 +86,15 @@ export async function getMyAppointments(req, res) {
     const userId = req.userId;
     const { status, role } = req.query;
 
-    const query = {};
+    const where = {};
+    if (status) where.status = status;
+    if (role === 'organiser') where.organiserId = userId; else where.customerId = userId;
 
-    if (status) {
-      query.status = status;
-    }
-
-    // Determine if user is customer or organiser
-    if (role === 'organiser') {
-      query.organiser = userId;
-    } else {
-      query.customer = userId;
-    }
-
-    const appointments = await Appointment.find(query)
-      .populate('service', 'name price duration')
-      .populate('organiser', 'name email phone avatar')
-      .populate('customer', 'name email phone')
-      .sort({ date: -1 });
+    const appointments = await Appointment.findAll({ where, include: [
+      { model: Service, as: 'service', attributes: ['id','name','price','duration'] },
+      { model: User, as: 'organiser', attributes: ['id','name','email','phone','avatar'] },
+      { model: User, as: 'customer', attributes: ['id','name','email','phone'] },
+    ], order: [['date','DESC']] });
 
     sendResponse(res, 200, true, appointments, 'Appointments fetched successfully');
   } catch (error) {
@@ -134,15 +106,12 @@ export async function getAppointmentById(req, res) {
   try {
     const { appointmentId } = req.params;
 
-    const appointment = await Appointment.findById(appointmentId)
-      .populate('service')
-      .populate('organiser', 'name email phone avatar')
-      .populate('customer', 'name email phone');
-
-    if (!appointment) {
-      return sendError(res, 404, 'Appointment not found');
-    }
-
+    const appointment = await Appointment.findByPk(appointmentId, { include: [
+      { model: Service, as: 'service' },
+      { model: User, as: 'organiser', attributes: ['id','name','email','phone','avatar'] },
+      { model: User, as: 'customer', attributes: ['id','name','email','phone'] },
+    ] });
+    if (!appointment) return sendError(res, 404, 'Appointment not found');
     sendResponse(res, 200, true, appointment, 'Appointment fetched successfully');
   } catch (error) {
     sendError(res, 500, error.message);
@@ -155,22 +124,11 @@ export async function cancelAppointment(req, res) {
     const { reason } = req.body;
     const userId = req.userId;
 
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) {
-      return sendError(res, 404, 'Appointment not found');
-    }
+    const appointment = await Appointment.findByPk(appointmentId);
+    if (!appointment) return sendError(res, 404, 'Appointment not found');
+    if (appointment.customerId.toString() !== userId && appointment.organiserId.toString() !== userId) return sendError(res, 403, 'Not authorized to cancel this appointment');
 
-    // Check if user is customer or organiser
-    if (appointment.customer.toString() !== userId && appointment.organiser.toString() !== userId) {
-      return sendError(res, 403, 'Not authorized to cancel this appointment');
-    }
-
-    appointment.status = 'cancelled';
-    appointment.cancellationReason = reason || 'No reason provided';
-    appointment.cancelledBy = appointment.customer.toString() === userId ? 'customer' : 'organiser';
-    appointment.cancelledAt = new Date();
-    await appointment.save();
-
+    await appointment.update({ status: 'cancelled', cancellationReason: reason || 'No reason provided', cancelledBy: appointment.customerId.toString() === userId ? 'customer' : 'organiser', cancelledAt: new Date() });
     sendResponse(res, 200, true, appointment, 'Appointment cancelled successfully');
   } catch (error) {
     sendError(res, 500, error.message);
@@ -187,54 +145,22 @@ export async function rescheduleAppointment(req, res) {
       return sendError(res, 400, 'Please provide newDate, newStartTime, and newEndTime');
     }
 
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) {
-      return sendError(res, 404, 'Appointment not found');
-    }
+    const appointment = await Appointment.findByPk(appointmentId);
+    if (!appointment) return sendError(res, 404, 'Appointment not found');
+    if (appointment.customerId.toString() !== userId && appointment.organiserId.toString() !== userId) return sendError(res, 403, 'Not authorized to reschedule this appointment');
 
-    if (appointment.customer.toString() !== userId && appointment.organiser.toString() !== userId) {
-      return sendError(res, 403, 'Not authorized to reschedule this appointment');
-    }
+    const start = new Date(newDate);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const existingAppointment = await Appointment.findOne({ where: { serviceId: appointment.serviceId, id: { [Op.ne]: appointmentId }, date: { [Op.gte]: start, [Op.lt]: end }, startTime: newStartTime, status: { [Op.ne]: 'cancelled' } } });
+    if (existingAppointment) return sendError(res, 400, 'This slot is already booked');
 
-    // Check if new slot is available
-    const existingAppointment = await Appointment.findOne({
-      service: appointment.service,
-      _id: { $ne: appointmentId },
-      date: {
-        $gte: new Date(newDate),
-        $lt: new Date(new Date(newDate).getTime() + 24 * 60 * 60 * 1000),
-      },
-      startTime: newStartTime,
-      status: { $ne: 'cancelled' },
-    });
+    const previousAppointmentData = { oldDate: appointment.date, oldStartTime: appointment.startTime, oldEndTime: appointment.endTime };
 
-    if (existingAppointment) {
-      return sendError(res, 400, 'This slot is already booked');
-    }
+    await appointment.update({ date: new Date(newDate), startTime: newStartTime, endTime: newEndTime, status: 'pending', rescheduleCount: (appointment.rescheduleCount || 0) + 1, previousAppointmentId: appointmentId });
 
-    // Store previous appointment details
-    const previousAppointmentData = {
-      oldDate: appointment.date,
-      oldStartTime: appointment.startTime,
-      oldEndTime: appointment.endTime,
-    };
+    const updated = await Appointment.findByPk(appointment.id, { include: [ { model: Service, as: 'service', attributes: ['name','duration','price'] }, { model: User, as: 'organiser', attributes: ['name','email','phone'] }, { model: User, as: 'customer', attributes: ['name','email','phone'] } ] });
 
-    appointment.date = new Date(newDate);
-    appointment.startTime = newStartTime;
-    appointment.endTime = newEndTime;
-    appointment.status = 'pending';
-    appointment.rescheduleCount += 1;
-    appointment.previousAppointment = appointmentId; // Self-reference for tracking
-
-    await appointment.save();
-
-    await appointment.populate([
-      { path: 'service', select: 'name duration price' },
-      { path: 'organiser', select: 'name email phone' },
-      { path: 'customer', select: 'name email phone' },
-    ]);
-
-    sendResponse(res, 200, true, { ...appointment.toObject(), previousAppointmentData }, 'Appointment rescheduled successfully');
+    sendResponse(res, 200, true, { ...updated.get({ plain: true }), previousAppointmentData }, 'Appointment rescheduled successfully');
   } catch (error) {
     sendError(res, 500, error.message);
   }
@@ -245,26 +171,12 @@ export async function confirmAppointment(req, res) {
     const { appointmentId } = req.params;
     const userId = req.userId;
 
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) {
-      return sendError(res, 404, 'Appointment not found');
-    }
-
-    // Only organiser can confirm
-    if (appointment.organiser.toString() !== userId) {
-      return sendError(res, 403, 'Only organiser can confirm appointments');
-    }
-
-    appointment.status = 'confirmed';
-    await appointment.save();
-
-    await appointment.populate([
-      { path: 'service', select: 'name duration price' },
-      { path: 'organiser', select: 'name email phone' },
-      { path: 'customer', select: 'name email phone' },
-    ]);
-
-    sendResponse(res, 200, true, appointment, 'Appointment confirmed successfully');
+    const appointment = await Appointment.findByPk(appointmentId);
+    if (!appointment) return sendError(res, 404, 'Appointment not found');
+    if (appointment.organiserId.toString() !== userId) return sendError(res, 403, 'Only organiser can confirm appointments');
+    await appointment.update({ status: 'confirmed' });
+    const updated = await Appointment.findByPk(appointment.id, { include: [ { model: Service, as: 'service', attributes: ['name','duration','price'] }, { model: User, as: 'organiser', attributes: ['name','email','phone'] }, { model: User, as: 'customer', attributes: ['name','email','phone'] } ] });
+    sendResponse(res, 200, true, updated, 'Appointment confirmed successfully');
   } catch (error) {
     sendError(res, 500, error.message);
   }
@@ -273,34 +185,21 @@ export async function confirmAppointment(req, res) {
 export async function getAppointmentStats(req, res) {
   try {
     const userId = req.userId;
-    const user = await User.findById(userId);
-
+    const user = await User.findByPk(userId);
+    if (!user) return sendError(res, 404, 'User not found');
     let stats = {};
-
     if (user.role === 'organiser') {
-      const totalAppointments = await Appointment.countDocuments({ organiser: userId });
-      const confirmedAppointments = await Appointment.countDocuments({ organiser: userId, status: 'confirmed' });
-      const pendingAppointments = await Appointment.countDocuments({ organiser: userId, status: 'pending' });
-      const completedAppointments = await Appointment.countDocuments({ organiser: userId, status: 'completed' });
-
-      stats = {
-        totalAppointments,
-        confirmedAppointments,
-        pendingAppointments,
-        completedAppointments,
-      };
+      const totalAppointments = await Appointment.count({ where: { organiserId: userId } });
+      const confirmedAppointments = await Appointment.count({ where: { organiserId: userId, status: 'confirmed' } });
+      const pendingAppointments = await Appointment.count({ where: { organiserId: userId, status: 'pending' } });
+      const completedAppointments = await Appointment.count({ where: { organiserId: userId, status: 'completed' } });
+      stats = { totalAppointments, confirmedAppointments, pendingAppointments, completedAppointments };
     } else {
-      const totalAppointments = await Appointment.countDocuments({ customer: userId });
-      const confirmedAppointments = await Appointment.countDocuments({ customer: userId, status: 'confirmed' });
-      const completedAppointments = await Appointment.countDocuments({ customer: userId, status: 'completed' });
-      const cancelledAppointments = await Appointment.countDocuments({ customer: userId, status: 'cancelled' });
-
-      stats = {
-        totalAppointments,
-        confirmedAppointments,
-        completedAppointments,
-        cancelledAppointments,
-      };
+      const totalAppointments = await Appointment.count({ where: { customerId: userId } });
+      const confirmedAppointments = await Appointment.count({ where: { customerId: userId, status: 'confirmed' } });
+      const completedAppointments = await Appointment.count({ where: { customerId: userId, status: 'completed' } });
+      const cancelledAppointments = await Appointment.count({ where: { customerId: userId, status: 'cancelled' } });
+      stats = { totalAppointments, confirmedAppointments, completedAppointments, cancelledAppointments };
     }
 
     sendResponse(res, 200, true, stats, 'Stats fetched successfully');

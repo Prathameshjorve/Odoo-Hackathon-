@@ -15,6 +15,32 @@ export function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+import nodemailer from 'nodemailer';
+
+export async function sendOtpEmail(to, otp) {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to,
+      subject: 'Your verification OTP',
+      text: `Your verification code is ${otp}. It expires in ${process.env.OTP_EXPIRE || '10m'}`,
+    });
+
+    return info;
+  } catch (err) {
+    console.error('Error sending email', err);
+    throw err;
+  }
+}
+
 export function formatTime(time) {
   // Convert HH:mm to time string
   const [hours, minutes] = time.split(':').map(Number);

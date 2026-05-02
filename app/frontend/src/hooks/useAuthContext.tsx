@@ -26,22 +26,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user and token from localStorage on mount
+  // Load token from localStorage and validate by fetching profile
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    let mounted = true;
+    async function validate() {
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        if (mounted) setIsLoading(false);
+        return;
+      }
 
-    if (storedToken && storedUser) {
+      setToken(storedToken);
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setToken(storedToken);
-        setUser(parsedUser);
-      } catch {
+        const resp = await authAPI.getProfile();
+        const profile = resp.data?.data ?? resp.data;
+        if (mounted) {
+          setUser(profile);
+        }
+      } catch (err) {
+        // Token invalid or expired; clear storage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        if (mounted) {
+          setToken(null);
+          setUser(null);
+        }
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     }
-    setIsLoading(false);
+
+    validate();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const login = (newToken: string, newUser: User) => {
@@ -71,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         token,
         isLoading,
-        isAuthenticated: !!token,
+        isAuthenticated: !!token && !!user,
         login,
         logout,
         signup,

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config/config.js';
 import { connectDB } from './config/database.js';
+import { sequelize } from './models/index.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 // Import routes
@@ -38,6 +39,14 @@ app.use(errorHandler);
 async function startServer() {
   try {
     await connectDB();
+    // Initialize Sequelize (MySQL) and sync models
+    try {
+      await sequelize.authenticate();
+      await sequelize.sync();
+      console.log('Sequelize connected and models synced');
+    } catch (err) {
+      console.error('Sequelize connection/sync error:', err.message || err);
+    }
     app.listen(config.port, () => {
       console.log(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
     });

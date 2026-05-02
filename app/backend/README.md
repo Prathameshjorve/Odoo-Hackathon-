@@ -1,3 +1,58 @@
+# Backend Setup (MySQL migration)
+
+This backend can run against either MongoDB (legacy) or MySQL via Sequelize. To fully migrate to MySQL, follow these steps.
+
+1. Install and run MySQL (or use a Docker container):
+
+   - Docker quick start:
+
+```powershell
+docker run --name booksy-mysql -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=booksy -p 3306:3306 -d mysql:8
+```
+
+2. Copy `.env.example` to `.env` and edit credentials:
+
+```text
+DB_DIALECT=mysql
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASS=secret
+DB_NAME=booksy
+USE_MYSQL=true
+
+# JWT
+JWT_SECRET=change_this_jwt_secret
+
+# Email (for OTP)
+EMAIL_USER=you@example.com
+EMAIL_PASS=your-app-password
+EMAIL_FROM=Booksy <you@example.com>
+```
+
+3. Install dependencies (already done in this repo):
+
+```powershell
+cd app/backend
+npm install
+```
+
+4. Seed the DB (creates admin user `admin@booksy.local` by default):
+
+```powershell
+npm run db:seed
+```
+
+You can override admin credentials with `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASS` in `.env`.
+
+5. Start the backend:
+
+```powershell
+npm run dev
+```
+
+Notes:
+- If MySQL is not available, the server will fall back to MongoDB using `MONGODB_URI`.
+- To remove MongoDB entirely, you can uninstall `mongoose` after confirming MySQL runs correctly.
 # Booksy Backend
 
 Appointment Booking System Backend built with Node.js, Express, and MongoDB.
