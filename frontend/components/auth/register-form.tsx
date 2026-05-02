@@ -10,7 +10,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader, AlertCircle, Building2, User as UserIcon } from "lucide-react";
+import { Loader, AlertCircle, Building2, User as UserIcon, Eye, EyeOff } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -22,6 +22,7 @@ export function RegisterForm({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [orgLocation, setOrgLocation] = useState("");
   const [role, setRole] = useState<"USER" | "ORGANIZATION">("USER");
@@ -165,16 +166,29 @@ export function RegisterForm({
         {/* Password */}
         <Field>
           <FieldLabel>Password</FieldLabel>
-          <Input
-            type="password"
-            placeholder="Create a password (min 8 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            disabled={isPending}
-            className="transition-all duration-200 focus:ring-2"
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a password (min 8 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              disabled={isPending}
+              className="transition-all duration-200 focus:ring-2 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </Field>
 
         {/* SUBMIT */}

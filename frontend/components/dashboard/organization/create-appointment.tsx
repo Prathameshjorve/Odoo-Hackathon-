@@ -469,10 +469,7 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" className="flex-1 sm:flex-none gap-2" size="sm">
-              <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">Preview</span>
-            </Button>
+
             <Button
               className="flex-1 sm:flex-none gap-2"
               onClick={handleSubmit}

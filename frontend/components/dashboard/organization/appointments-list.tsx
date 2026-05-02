@@ -57,7 +57,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
-import { GetUserData } from "@/lib/auth";
+import { useUser } from "@/contexts/UserContext";
 import { Label } from "@/components/ui/label";
 import { bookingApi } from "@/lib/api";
 import { authStorage } from "@/lib/auth";
@@ -118,21 +118,24 @@ export default function OrganizationAppointmentsList() {
   const [filterProvider, setFilterProvider] = React.useState("all");
   const [filterPaymentStatus, setFilterPaymentStatus] = React.useState("all");
 
+  const { user } = useUser();
+
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await GetUserData();
-        setUserData(data);
+        setUserData(user);
         await fetchBookings();
       } catch (error) {
-        console.error("Failed to fetch user data:", error);
+        console.error("Failed to fetch data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, []);
+    if (user !== undefined) {
+        fetchData();
+    }
+  }, [user]);
 
   const fetchBookings = async () => {
     try {

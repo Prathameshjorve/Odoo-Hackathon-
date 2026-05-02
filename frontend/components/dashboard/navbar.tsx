@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { GetUserData, clearAuthData } from "@/lib/auth";
 import NotificationDropdown from "./notification-dropdown";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/contexts/UserContext";
 import { ModeToggle } from "../theme-toggle";
 import Sidebar from "./sidebar";
 import { navigationByRole } from "@/lib/navigation-config";
@@ -238,49 +239,17 @@ function UserProfileDropdown({
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [userData, setUserData] = React.useState<{
-    name: string;
-    email: string;
-    role: UserRole;
-  } | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { user, isLoading } = useUser();
 
-  const userRole = userData?.role || "customer";
-  const userName = userData?.name || "";
-  const userEmail = userData?.email || "";
-  const navigationLinks = userData ? navigationByRole[userRole] : [];
-  const mobileNavStructure = userData ? getMobileNav(userRole) : [{ name: "Main", items: [] }];
+  const userRole = user?.isAdmin ? "admin" : user?.role === "ORGANIZATION" ? "organizer" : "customer";
+  const userName = user?.name || "";
+  const userEmail = user?.email || "";
+  const navigationLinks = user ? navigationByRole[userRole] : [];
+  const mobileNavStructure = user ? getMobileNav(userRole) : [{ name: "Main", items: [] }];
 
   const handleLogout = React.useCallback(() => {
     clearAuthData();
     router.push("/login");
-  }, [router]);
-
-  React.useEffect(() => {
-    const fetchUserData = async () => {
-      setIsLoading(true);
-      try {
-        const data = await GetUserData();
-        if (data) {
-          console.log("Navbar - User data:", data); // Debug log
-          setUserData({
-            name: data.name,
-            email: data.email,
-            role: data.role as UserRole
-          });
-        } else {
-          // No user data, redirect to login
-          router.push("/login");
-        }
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-        router.push("/login");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserData();
   }, [router]);
 
   return (

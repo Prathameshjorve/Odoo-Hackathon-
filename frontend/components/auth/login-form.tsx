@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader, AlertCircle, CheckCircle, Mail } from "lucide-react";
+import { Loader, AlertCircle, CheckCircle, Mail, Eye, EyeOff } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { saveAuthData } from "@/lib/auth";
 import { getRedirectUrl } from "@/lib/routes";
@@ -21,8 +21,9 @@ export function LoginForm({
 }: React.ComponentProps<"form">) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState("");
   const [showResendVerification, setShowResendVerification] = useState(false);
@@ -35,6 +36,9 @@ export function LoginForm({
     setError("");
     setShowResendVerification(false);
     setResendSuccess("");
+
+    const email = emailRef.current?.value || "";
+    const password = passwordRef.current?.value || "";
 
     try {
       const response = await authApi.login({ email, password });
@@ -61,8 +65,12 @@ export function LoginForm({
         });
 
         // Clear input fields
-        setEmail("");
-        setPassword("");
+        if (emailRef.current) {
+          emailRef.current.value = "";
+        }
+        if (passwordRef.current) {
+          passwordRef.current.value = "";
+        }
 
         // Get redirect URL from query params or use default based on role
         const redirectParam = searchParams.get('redirect');
@@ -101,6 +109,7 @@ export function LoginForm({
   }
 
   async function handleResendVerification() {
+    const email = emailRef.current?.value || "";
     if (!email) {
       setError("Please enter your email address");
       return;
@@ -192,9 +201,10 @@ export function LoginForm({
           <FieldLabel>Email</FieldLabel>
           <Input
             type="email"
+            name="email"
+            ref={emailRef}
             placeholder="m@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
             required
             disabled={isPending}
             className="transition-all duration-200 focus:ring-2"
@@ -212,14 +222,28 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isPending}
-            className="transition-all duration-200 focus:ring-2"
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              ref={passwordRef}
+              name="password"
+              autoComplete="new-password"
+              required
+              disabled={isPending}
+              className="transition-all duration-200 focus:ring-2 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </Field>
 
         {/* SUBMIT */}
