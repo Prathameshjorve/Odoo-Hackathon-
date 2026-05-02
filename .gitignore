@@ -1,0 +1,12 @@
+# dependencies
+/node_modules
+
+# env files (can opt-in for committing if needed)
+.env*
+/generated/prisma
+
+/lib/generated/prisma
+/BOOKING_NOTIFICATIONS_IMPLEMENTATION.md
+/COMPLETE_NOTIFICATION_IMPLEMENTATION.md
+/NOTIFICATION_IMPLEMENTATION_SUMMARY.md
+/COMPLETE_NOTIFICATION_SUMMARY.md
