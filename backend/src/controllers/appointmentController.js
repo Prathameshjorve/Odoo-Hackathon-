@@ -122,7 +122,10 @@ async function createAppointment(req, res) {
             }
 
             // Check against business hours
-            const businessHour = organization.businessHours.find((bh) => bh.day === slot.day);
+            const businessHour = organization.businessHours.find(
+                (bh) => typeof bh === 'object' && bh.day && typeof bh.day === 'string' && 
+                        bh.day.trim().toUpperCase() === String(slot.day).trim().toUpperCase()
+            );
             if (!businessHour) {
                 return res.status(400).json({
                     success: false,
