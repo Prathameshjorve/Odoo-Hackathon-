@@ -18,6 +18,7 @@ const publicRoutes = require('./routes/public');
 const notificationRoutes = require('./routes/notification');
 const reminderRoutes = require('./routes/reminder');
 const paymentRoutes = require('./routes/payments');
+const paymentRoutesSimple = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
@@ -98,6 +99,7 @@ app.use('/admin', adminRoutes); // Admin routes
 app.use('/', appointmentRoutes); // Public routes
 app.use('/', bookingRoutes); // Booking routes (public + protected)
 app.use('/', paymentRoutes); // Payments and webhooks
+app.use('/api/payment', paymentRoutesSimple); // Simple direct payment routes
 app.use('/notifications', notificationRoutes);
 app.use('/reminders', reminderRoutes); // Reminder routes for n8n scheduler
 

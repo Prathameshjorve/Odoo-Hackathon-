@@ -367,10 +367,18 @@ export const bookingApi = {
 export const paymentsApi = {
   createOrder: (token: string, bookingId: string) =>
     api.post<{ orderId: string; amount: number; currency: string; bookingId: string; merchantKeyId: string | null }>(
-      "/payments/create-order",
+      "/api/payment/create-order",
       { bookingId },
       token
     ),
+
+  verifyPayment: (token: string, data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    bookingId: string;
+  }) =>
+    api.post("/api/payment/verify", data, token),
 };
 
 // Media API functions

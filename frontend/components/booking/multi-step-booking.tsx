@@ -307,10 +307,26 @@ export function MultiStepBooking({ appointment, onSuccess, onCancel }: MultiStep
                         notes: {
                             bookingId: createdBooking.id,
                         },
-                        handler: function () {
-                            // Final success UI – webhook will update booking/payment status
-                            setCurrentStep(totalSteps);
-                            onSuccess?.();
+                        handler: async function (response: any) {
+                            try {
+                                const verifyResponse = await paymentsApi.verifyPayment(token, {
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    bookingId: createdBooking.id,
+                                });
+
+                                if (verifyResponse.success) {
+                                    // Final success UI
+                                    setCurrentStep(totalSteps);
+                                    onSuccess?.();
+                                } else {
+                                    setError(verifyResponse.message || "Payment verification failed");
+                                }
+                            } catch (err: any) {
+                                console.error("Verification error:", err);
+                                setError(err.message || "Error verifying payment");
+                            }
                         },
                         modal: {
                             ondismiss: async function () {
