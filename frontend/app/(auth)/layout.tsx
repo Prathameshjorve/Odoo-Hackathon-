@@ -84,7 +84,7 @@ export default function AuthLayout({
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
               <Package className="size-4" />
             </div>
-            <span className="text-xl"> BookNow </span>
+            <span className="text-xl"> BookEasy </span>
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">

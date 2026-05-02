@@ -58,12 +58,16 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    timeout = 15000
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     const config: RequestInit = {
       ...options,
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         "ngrok-skip-browser-warning": "true", // Skip ngrok browser warning

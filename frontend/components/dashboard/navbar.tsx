@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import {
   BellIcon,
   Calendar,
+  
   CalendarCheck,
   Users,
   BarChart3,
@@ -330,7 +331,7 @@ export default function Navbar() {
           <MobileNav nav={mobileNavStructure} />
 
           <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="font-bold text-lg hidden sm:inline-block">BookNow</span>
+            <span className="font-bold text-lg hidden sm:inline-block">BookEasy</span>
           </Link>
         </div>
 
