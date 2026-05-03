@@ -13,6 +13,9 @@ import {
   Line,
   AreaChart,
   Area,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import {
   Card,
@@ -109,7 +112,23 @@ export default function OrganizationReportsPage() {
     );
   }
 
-  const { stats, chartData, topAppointments } = data || { stats: {}, chartData: [], topAppointments: [] };
+  const { 
+    stats, 
+    chartData, 
+    topAppointments, 
+    bookingStatusDistribution, 
+    transactionStatusDistribution,
+    refundStats 
+  } = data || { 
+    stats: {}, 
+    chartData: [], 
+    topAppointments: [],
+    bookingStatusDistribution: [],
+    transactionStatusDistribution: [],
+    refundStats: { count: 0, totalAmount: 0 }
+  };
+
+  const COLORS = ['#10b981', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6'];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -143,9 +162,9 @@ export default function OrganizationReportsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
           { title: "Total Bookings", value: stats.total, sub: `Last ${days} days`, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-          { title: "Confirmed", value: stats.confirmed, sub: `${stats.total ? Math.round((stats.confirmed / stats.total) * 100) : 0}% success rate`, icon: CheckCircle2, color: "text-green-500", bg: "bg-green-500/10" },
-          { title: "Cancelled", value: stats.cancelled, sub: `${stats.total ? Math.round((stats.cancelled / stats.total) * 100) : 0}% cancellation`, icon: XCircle, color: "text-rose-500", bg: "bg-rose-500/10" },
           { title: "Revenue", value: `₹${stats.revenue?.toLocaleString()}`, sub: "Total paid bookings", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-500/10" },
+          { title: "Refunds", value: `₹${refundStats.totalAmount?.toLocaleString()}`, sub: `${refundStats.count} refund requests`, icon: TrendingUp, color: "text-rose-500", bg: "bg-rose-500/10" },
+          { title: "Failed", value: stats.failedTransactions, sub: "Payment failures", icon: XCircle, color: "text-rose-500", bg: "bg-rose-500/10" },
         ].map((stat, i) => (
           <Card key={i} className="overflow-hidden border-none shadow-md bg-gradient-to-br from-card to-muted/30">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -246,6 +265,82 @@ export default function OrganizationReportsPage() {
                 />
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="shadow-lg border-none">
+          <CardHeader>
+            <CardTitle>Booking Status</CardTitle>
+            <CardDescription>Distribution of appointment states.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={bookingStatusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {bookingStatusDistribution.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                   contentStyle={{ backgroundColor: "hsl(var(--card))", borderRadius: "12px", border: "1px solid hsl(var(--border))" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center gap-4 mt-4">
+              {bookingStatusDistribution.map((entry: any, index: number) => (
+                <div key={entry.name} className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                  <span className="text-xs text-muted-foreground">{entry.name}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg border-none">
+          <CardHeader>
+            <CardTitle>Transaction Health</CardTitle>
+            <CardDescription>Success vs failure vs refund rates.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={transactionStatusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {transactionStatusDistribution.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                   contentStyle={{ backgroundColor: "hsl(var(--card))", borderRadius: "12px", border: "1px solid hsl(var(--border))" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center gap-4 mt-4">
+              {transactionStatusDistribution.map((entry: any, index: number) => (
+                <div key={entry.name} className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[(index + 1) % COLORS.length] }} />
+                  <span className="text-xs text-muted-foreground">{entry.name}</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>

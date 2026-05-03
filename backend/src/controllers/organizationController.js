@@ -134,6 +134,30 @@ async function getReports(req, res) {
             confirmed: bookings.filter(b => b.bookingStatus === 'CONFIRMED' || b.bookingStatus === 'COMPLETED').length,
             cancelled: bookings.filter(b => b.bookingStatus === 'CANCELLED').length,
             revenue: bookings.filter(b => b.paymentStatus === 'PAID').reduce((sum, b) => sum + (b.totalAmount || 0), 0),
+            failedTransactions: bookings.filter(b => b.paymentStatus === 'FAILED').length,
+        };
+
+        // Booking Status Distribution (for Pie Chart)
+        const bookingStatusDistribution = [
+            { name: 'Completed', value: bookings.filter(b => b.bookingStatus === 'COMPLETED').length },
+            { name: 'Confirmed', value: bookings.filter(b => b.bookingStatus === 'CONFIRMED').length },
+            { name: 'Cancelled', value: bookings.filter(b => b.bookingStatus === 'CANCELLED').length },
+            { name: 'Pending', value: bookings.filter(b => b.bookingStatus === 'PENDING').length },
+        ].filter(item => item.value > 0);
+
+        // Transaction Status Distribution (for Pie Chart)
+        const transactionStatusDistribution = [
+            { name: 'Success', value: bookings.filter(b => b.paymentStatus === 'PAID').length },
+            { name: 'Failed', value: bookings.filter(b => b.paymentStatus === 'FAILED').length },
+            { name: 'Refunded', value: bookings.filter(b => b.paymentStatus === 'REFUNDED').length },
+            { name: 'Pending', value: bookings.filter(b => b.paymentStatus === 'PENDING').length },
+        ].filter(item => item.value > 0);
+
+        // Refund Stats
+        const refundedBookings = bookings.filter(b => b.paymentStatus === 'REFUNDED');
+        const refundStats = {
+            count: refundedBookings.length,
+            totalAmount: refundedBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0)
         };
 
         // Chart data generation
@@ -154,7 +178,9 @@ async function getReports(req, res) {
                 const dateStr = booking.createdAt.toISOString().split('T')[0];
                 if (dailyMap[dateStr] !== undefined) {
                     dailyMap[dateStr].bookings++;
-                    if (booking.paymentStatus === 'PAID') {
+                    if (booking.paymentStatus === 'PAID' || booking.paymentStatus === 'REFUNDED') {
+                        // Include refunded in gross revenue if desired, or keep separate. 
+                        // Usually revenue chart shows successful initial payments.
                         dailyMap[dateStr].revenue += (booking.totalAmount || 0);
                     }
                 }
@@ -180,7 +206,7 @@ async function getReports(req, res) {
                     monthlyMap[key] = { label, bookings: 0, revenue: 0, sortKey: date.getTime() };
                 }
                 monthlyMap[key].bookings++;
-                if (booking.paymentStatus === 'PAID') {
+                if (booking.paymentStatus === 'PAID' || booking.paymentStatus === 'REFUNDED') {
                     monthlyMap[key].revenue += (booking.totalAmount || 0);
                 }
             });
@@ -204,7 +230,7 @@ async function getReports(req, res) {
                 appointmentStats[title] = { title, count: 0, revenue: 0 };
             }
             appointmentStats[title].count++;
-            if (booking.paymentStatus === 'PAID') {
+            if (booking.paymentStatus === 'PAID' || booking.paymentStatus === 'REFUNDED') {
                 appointmentStats[title].revenue += (booking.totalAmount || 0);
             }
         });
@@ -217,6 +243,9 @@ async function getReports(req, res) {
             success: true,
             data: {
                 stats,
+                bookingStatusDistribution,
+                transactionStatusDistribution,
+                refundStats,
                 chartData,
                 topAppointments,
             },

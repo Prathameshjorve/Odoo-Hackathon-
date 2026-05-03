@@ -13,26 +13,26 @@ model User {
   password                String
   name                    String?
   emailVerified           Boolean                  @default(false)
-  lastOtpSentAt           DateTime?
-  otp                     String?
-  otpExpiry               DateTime?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   role                    Role                     @default(USER)
   isMember                Boolean                  @default(false)
   organizationId          String?
   phone                   String?
+  lastOtpSentAt           DateTime?
+  otp                     String?
+  otpExpiry               DateTime?
+  assignedBookings        Booking[]                @relation("AssignedBookings")
+  bookings                Booking[]
   emailVerificationTokens EmailVerificationToken[]
+  notifications           Notification[]
   adminOrganization       Organization?            @relation("OrganizationAdmin")
   passwordResetTokens     PasswordResetToken[]
   refreshTokens           RefreshToken[]
+  refundAuditLogs         RefundAuditLog[]
+  handledRefunds          RefundTransaction[]
   organization            Organization?            @relation("OrganizationMembers", fields: [organizationId], references: [id])
   allowedAppointments     Appointment[]            @relation("AppointmentAllowedUsers")
-  bookings                Booking[]
-  assignedBookings        Booking[]                @relation("AssignedBookings")
-  notifications           Notification[]
-  handledRefunds         RefundTransaction[]
-  refundAuditLogs         RefundAuditLog[]
 
   @@index([organizationId])
 }
@@ -99,62 +99,337 @@ model OtpRecord {
   @@index([otpCode])
 }
 
-enum OtpPurpose {
-  SIGNUP
-  LOGIN
-  PASSWORD_RESET
-}
-
 model Organization {
   id                 String                          @id @default(cuid())
   name               String
   location           String
   description        String?
   businessHours      Json
-  timezone           String?
-  blackoutDates      Json?
   adminId            String                          @unique
   createdAt          DateTime                        @default(now())
   updatedAt          DateTime                        @updatedAt
-  appointments       Appointment[]
-  admin              User                            @relation("OrganizationAdmin", fields: [adminId], references: [id], onDelete: Cascade)
-  resources          Resource[]
-  members            User[]                          @relation("OrganizationMembers")
-  razorpayConnection OrganizationRazorpayConnection?
-  refundPolicy        RefundPolicy?
   bolnaApiKey        String?
+  blackoutDates      Json?
+  timezone           String?
+  appointments       Appointment[]
   bolnaAgents        BolnaAgent[]
   bolnaCalls         BolnaCall[]
+  admin              User                            @relation("OrganizationAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  razorpayConnection OrganizationRazorpayConnection?
+  refundPolicy       RefundPolicy?
+  resources          Resource[]
+  members            User[]                          @relation("OrganizationMembers")
 
   @@index([adminId])
 }
 
 /// Refund policy per organization
 model RefundPolicy {
-  id                   String   @id @default(cuid())
-  organizationId       String   @unique
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  rules                Json
-  specialRules         Json?
-  globalProcessingFee   Int      @default(0)
-  requiresApproval     Boolean  @default(true)
-  autoProcessAbove     Int?
-  allowAutoApproval    Boolean  @default(true)
-  maxRefundRequestsPerBooking Int @default(3)
-  maxRefundRequestsPerUserPerMonth Int @default(10)
-  allowWalletCredits   Boolean  @default(false)
-  version              Int      @default(1)
-
-  // Backward-compatible tier settings
-  fullRefundHours      Int      @default(48)
-  partialRefundHours   Int?
-  partialRefundPercent Int      @default(50)
-  processingFee        Int      @default(0) // in cents
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                               String       @id @default(cuid())
+  organizationId                   String       @unique
+  rules                            Json
+  specialRules                     Json?
+  globalProcessingFee              Int          @default(0)
+  requiresApproval                 Boolean      @default(true)
+  autoProcessAbove                 Int?
+  allowAutoApproval                Boolean      @default(true)
+  maxRefundRequestsPerBooking      Int          @default(3)
+  maxRefundRequestsPerUserPerMonth Int          @default(10)
+  allowWalletCredits               Boolean      @default(false)
+  version                          Int          @default(1)
+  fullRefundHours                  Int          @default(48)
+  partialRefundHours               Int?
+  partialRefundPercent             Int          @default(50)
+  processingFee                    Int          @default(0)
+  createdAt                        DateTime     @default(now())
+  updatedAt                        DateTime     @updatedAt
+  organization                     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+}
+
+model RefundTransaction {
+  id                 String             @id @default(cuid())
+  bookingId          String             @unique
+  originalAmount     Int?
+  refundAmount       Int?
+  processingFee      Int                @default(0)
+  gatewayFee         Int                @default(0)
+  netAmount          Int?
+  razorpayPaymentId  String?
+  razorpayRefundId   String?
+  razorpayWebhookId  String?
+  status             RefundStatus       @default(PENDING)
+  statusHistory      Json?
+  refundReason       RefundReason?
+  reasonDetails      String?
+  refundType         RefundType         @default(FULL)
+  refundBreakdown    Json?
+  eligibilityMessage String?
+  ruleApplied        String?
+  timeline           Json?
+  requestedBy        String?
+  requestedAt        DateTime           @default(now())
+  approvedBy         String?
+  approvedAt         DateTime?
+  processedBy        String?
+  processedAt        DateTime?
+  completedAt        DateTime?
+  failedAt           DateTime?
+  overrideAmount     Int?
+  emergencyRefund    Boolean            @default(false)
+  requestedByRole    String?
+  metadata           Json?
+  idempotencyKey     String?            @unique
+  retryCount         Int                @default(0)
+  lastError          String?
+  attempts           Int                @default(0)
+  amount             Int?
+  reason             String?
+  adminId            String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  auditLogs          RefundAuditLog[]
+  refundEvents       RefundEvent[]
+  retryQueue         RefundRetryQueue[]
+  admin              User?              @relation(fields: [adminId], references: [id])
+  booking            Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([razorpayRefundId])
+}
+
+model RefundEvent {
+  id                  String            @id @default(cuid())
+  refundTransactionId String
+  eventType           String
+  payload             Json
+  checksum            String
+  createdAt           DateTime          @default(now())
+  refundTransaction   RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
+
+  @@index([refundTransactionId])
+  @@index([eventType])
+}
+
+model RefundWebhookEvent {
+  id          String      @id @default(cuid())
+  eventId     String      @unique
+  eventType   String
+  payload     Json
+  signature   String?
+  status      QueueStatus @default(PENDING)
+  processedAt DateTime?
+  lastError   String?
+  createdAt   DateTime    @default(now())
+
+  @@index([eventType])
+  @@index([status])
+}
+
+model RefundRetryQueue {
+  id                  String            @id @default(cuid())
+  refundTransactionId String
+  attemptNumber       Int
+  scheduledAt         DateTime
+  lastError           String?
+  status              QueueStatus       @default(PENDING)
+  createdAt           DateTime          @default(now())
+  processedAt         DateTime?
+  refundTransaction   RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
+
+  @@index([refundTransactionId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model RefundAuditLog {
+  id                  String            @id @default(cuid())
+  refundTransactionId String
+  userId              String?
+  role                String?
+  action              String
+  ipAddress           String?
+  userAgent           String?
+  metadata            Json?
+  createdAt           DateTime          @default(now())
+  refundTransaction   RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
+  user                User?             @relation(fields: [userId], references: [id])
+
+  @@index([refundTransactionId])
+  @@index([userId])
+  @@index([action])
+}
+
+model Resource {
+  id                  String        @id @default(cuid())
+  name                String
+  capacity            Int
+  organizationId      String
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  bookings            Booking[]
+  organization        Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  allowedAppointments Appointment[] @relation("AppointmentAllowedResources")
+
+  @@index([organizationId])
+}
+
+model Appointment {
+  id                  String              @id @default(cuid())
+  title               String
+  description         String?
+  durationMinutes     Int
+  bookType            AppointmentBookType
+  assignmentType      AssignmentType
+  allowMultipleSlots  Boolean             @default(false)
+  maxSlotsPerBooking  Int?
+  price               Int?
+  cancellationHours   Int
+  schedule            Json
+  questions           Json
+  isPublished         Boolean             @default(false)
+  secretLink          String?             @unique
+  expiryTime          DateTime?
+  expiryCapacity      Int?
+  bookingsCount       Int                 @default(0)
+  confirmationMessage String?
+  introMessage        String?
+  isPaid              Boolean             @default(false)
+  location            String?
+  picture             String?
+  organizationId      String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  blackoutDates       Json?
+  bufferMinutes       Int?                @default(15)
+  dailyCapacity       Int?
+  timezone            String?
+  weeklyCapacity      Int?
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bookings            Booking[]
+  allowedResources    Resource[]          @relation("AppointmentAllowedResources")
+  allowedUsers        User[]              @relation("AppointmentAllowedUsers")
+
+  @@index([organizationId])
+  @@index([isPublished])
+  @@index([secretLink])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  read        Boolean          @default(false)
+  userId      String
+  relatedId   String?
+  relatedType String?
+  actionUrl   String?
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model Booking {
+  id                String             @id @default(cuid())
+  appointmentId     String
+  userId            String
+  resourceId        String?
+  assignedUserId    String?
+  startTime         DateTime
+  endTime           DateTime
+  numberOfSlots     Int                @default(1)
+  userResponses     Json?
+  paymentStatus     PaymentStatus      @default(PENDING)
+  bookingStatus     BookingStatus      @default(PENDING)
+  totalAmount       Int?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  amountPaid        Int?
+  razorpayPaymentId String?
+  appointment       Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  assignedUser      User?              @relation("AssignedBookings", fields: [assignedUserId], references: [id])
+  resource          Resource?          @relation(fields: [resourceId], references: [id])
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refundTransaction RefundTransaction?
+
+  @@index([appointmentId])
+  @@index([userId])
+  @@index([resourceId])
+  @@index([assignedUserId])
+  @@index([startTime])
+  @@index([bookingStatus])
+}
+
+model OrganizationRazorpayConnection {
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  razorpayMerchantId String
+  accessToken        String
+  refreshToken       String
+  tokenExpiresAt     DateTime
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  merchantKeyId      String?
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([razorpayMerchantId])
+}
+
+model BolnaAgent {
+  id             String       @id @default(cuid())
+  organizationId String
+  bolnaAgentId   String       @unique
+  name           String
+  welcomeMessage String
+  instructions   String
+  language       String       @default("en")
+  voiceId        String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  calls          BolnaCall[]
+
+  @@index([organizationId])
+}
+
+model BolnaCall {
+  id             String          @id @default(cuid())
+  organizationId String
+  agentId        String
+  bolnaCallId    String?         @unique
+  recipientPhone String
+  status         BolnaCallStatus @default(INITIATED)
+  duration       Int?
+  recordingUrl   String?
+  transcript     String?
+  errorMessage   String?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  completedAt    DateTime?
+  agent          BolnaAgent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum OtpPurpose {
+  SIGNUP
+  LOGIN
+  PASSWORD_RESET
 }
 
 enum RefundStatus {
@@ -186,187 +461,11 @@ enum RefundType {
   CUSTOM
 }
 
-model RefundTransaction {
-  id               String       @id @default(cuid())
-  bookingId        String       @unique
-  booking          Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-
-  originalAmount   Int?
-  refundAmount     Int?
-  processingFee    Int          @default(0)
-  gatewayFee       Int          @default(0)
-  netAmount        Int?
-
-  razorpayPaymentId String?
-  razorpayRefundId String?
-  razorpayWebhookId String?
-
-  status           RefundStatus @default(PENDING)
-  statusHistory    Json?
-
-  refundReason     RefundReason?
-  reasonDetails    String?
-  refundType       RefundType   @default(FULL)
-  refundBreakdown  Json?
-  eligibilityMessage String?
-  ruleApplied      String?
-  timeline         Json?
-
-  requestedBy      String?
-  requestedAt      DateTime     @default(now())
-  approvedBy       String?
-  approvedAt       DateTime?
-  processedBy      String?
-  processedAt      DateTime?
-  completedAt      DateTime?
-  failedAt         DateTime?
-  overrideAmount   Int?
-  emergencyRefund  Boolean      @default(false)
-  requestedByRole  String?
-
-  metadata         Json?
-  idempotencyKey   String?      @unique
-  retryCount       Int          @default(0)
-  lastError        String?
-
-  attempts         Int          @default(0)
-  amount           Int?
-  reason           String?
-  adminId          String?
-  admin            User?        @relation(fields: [adminId], references: [id])
-  refundEvents     RefundEvent[]
-  retryQueue       RefundRetryQueue[]
-  auditLogs        RefundAuditLog[]
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  @@index([bookingId])
-  @@index([status])
-  @@index([razorpayRefundId])
-}
-
-model RefundEvent {
-  id                 String   @id @default(cuid())
-  refundTransactionId String
-  refundTransaction   RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
-  eventType           String
-  payload             Json
-  checksum            String
-  createdAt           DateTime @default(now())
-
-  @@index([refundTransactionId])
-  @@index([eventType])
-}
-
-model RefundWebhookEvent {
-  id               String   @id @default(cuid())
-  eventId          String   @unique
-  eventType        String
-  payload          Json
-  signature        String?
-  status           QueueStatus @default(PENDING)
-  processedAt      DateTime?
-  lastError        String?
-  createdAt        DateTime @default(now())
-
-  @@index([eventType])
-  @@index([status])
-}
-
-model RefundRetryQueue {
-  id                   String   @id @default(cuid())
-  refundTransactionId   String
-  refundTransaction     RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
-  attemptNumber         Int
-  scheduledAt           DateTime
-  lastError             String?
-  status                QueueStatus @default(PENDING)
-  createdAt             DateTime @default(now())
-  processedAt           DateTime?
-
-  @@index([refundTransactionId])
-  @@index([status])
-  @@index([scheduledAt])
-}
-
-model RefundAuditLog {
-  id                   String   @id @default(cuid())
-  refundTransactionId   String
-  refundTransaction     RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
-  userId                String?
-  user                  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  role                  String?
-  action                String
-  ipAddress             String?
-  userAgent             String?
-  metadata              Json?
-  createdAt             DateTime @default(now())
-
-  @@index([refundTransactionId])
-  @@index([userId])
-  @@index([action])
-}
-
 enum QueueStatus {
   PENDING
   PROCESSING
   COMPLETED
   FAILED
-}
-
-model Resource {
-  id                  String        @id @default(cuid())
-  name                String
-  capacity            Int
-  organizationId      String
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  organization        Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  allowedAppointments Appointment[] @relation("AppointmentAllowedResources")
-  bookings            Booking[]
-
-  @@index([organizationId])
-}
-
-model Appointment {
-  id                  String              @id @default(cuid())
-  title               String
-  description         String?
-  durationMinutes     Int
-  bookType            AppointmentBookType
-  assignmentType      AssignmentType
-  allowMultipleSlots  Boolean             @default(false)
-  maxSlotsPerBooking  Int?
-  price               Int?
-  cancellationHours   Int
-  schedule            Json
-  questions           Json
-  isPublished         Boolean             @default(false)
-  secretLink          String?             @unique
-  expiryTime          DateTime?
-  expiryCapacity      Int?
-  bookingsCount       Int                 @default(0)
-  confirmationMessage String?
-  introMessage        String?
-  isPaid              Boolean             @default(false)
-  location            String?
-  picture             String?
-  timezone            String?
-  bufferMinutes       Int?                @default(15)
-  blackoutDates       Json?
-  dailyCapacity       Int?
-  weeklyCapacity      Int?
-  organizationId      String
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  allowedResources    Resource[]          @relation("AppointmentAllowedResources")
-  allowedUsers        User[]              @relation("AppointmentAllowedUsers")
-  bookings            Booking[]
-
-  @@index([organizationId])
-  @@index([isPublished])
-  @@index([secretLink])
 }
 
 enum Role {
@@ -421,119 +520,6 @@ enum NotificationType {
   SYSTEM_ANNOUNCEMENT
   REFUND_REQUESTED
   REFUND_PROCESSED
-}
-
-model Notification {
-  id          String           @id @default(cuid())
-  type        NotificationType
-  title       String
-  message     String
-  read        Boolean          @default(false)
-  userId      String
-  relatedId   String?
-  relatedType String?
-  actionUrl   String?
-  metadata    Json?
-  createdAt   DateTime         @default(now())
-  readAt      DateTime?
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([userId, read])
-  @@index([createdAt])
-}
-
-model Booking {
-  id             String        @id @default(cuid())
-  appointmentId  String
-  userId         String
-  resourceId     String?
-  assignedUserId String?
-  startTime      DateTime
-  endTime        DateTime
-  numberOfSlots  Int           @default(1)
-  userResponses  Json?
-  paymentStatus  PaymentStatus @default(PENDING)
-  bookingStatus  BookingStatus @default(PENDING)
-  totalAmount    Int?
-  amountPaid     Int?          // amount actually paid (in smallest currency unit)
-  razorpayPaymentId String?    // optional payment id for refunds
-  notes          String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  appointment    Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resource       Resource?     @relation(fields: [resourceId], references: [id])
-  assignedUser   User?         @relation("AssignedBookings", fields: [assignedUserId], references: [id])
-  refundTransaction RefundTransaction?
-
-  @@index([appointmentId])
-  @@index([userId])
-  @@index([resourceId])
-  @@index([assignedUserId])
-  @@index([startTime])
-  @@index([bookingStatus])
-}
-
-model OrganizationRazorpayConnection {
-  id                 String   @id @default(cuid())
-  organizationId     String   @unique
-  razorpayMerchantId String
-  accessToken        String
-  refreshToken       String
-  tokenExpiresAt     DateTime
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  // Optional public key (safe to expose to frontend for Checkout)
-  merchantKeyId      String?
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([razorpayMerchantId])
-}
-
-model BolnaAgent {
-  id              String      @id @default(cuid())
-  organizationId  String
-  bolnaAgentId    String      @unique
-  name            String
-  welcomeMessage  String      @db.Text
-  instructions    String      @db.Text
-  language        String      @default("en")
-  voiceId         String?
-  isActive        Boolean     @default(true)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  calls           BolnaCall[]
-
-  @@index([organizationId])
-}
-
-model BolnaCall {
-  id              String          @id @default(cuid())
-  organizationId  String
-  agentId         String
-  bolnaCallId     String?         @unique
-  recipientPhone  String
-  status          BolnaCallStatus @default(INITIATED)
-  duration        Int?
-  recordingUrl    String?
-  transcript      String?         @db.Text
-  errorMessage    String?
-  metadata        Json?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  completedAt     DateTime?
-
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agent           BolnaAgent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([agentId])
-  @@index([status])
-  @@index([createdAt])
 }
 
 enum BolnaCallStatus {
