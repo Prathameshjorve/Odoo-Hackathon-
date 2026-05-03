@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -419,6 +419,8 @@ enum NotificationType {
   EMAIL_VERIFIED
   PASSWORD_CHANGED
   SYSTEM_ANNOUNCEMENT
+  REFUND_REQUESTED
+  REFUND_PROCESSED
 }
 
 model Notification {

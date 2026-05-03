@@ -124,8 +124,9 @@ class RefundRepository {
   async acquireLock(lockKey, ttlSeconds = 30, tx = null) {
     const redis = require('../../lib/redisClient');
     return redis.withRedis(async (client) => {
-      return client.set(lockKey, 'locked', { NX: true, EX: ttlSeconds });
-    }, null);
+      const result = await client.set(lockKey, 'locked', { NX: true, EX: ttlSeconds });
+      return result === 'OK';
+    }, true); // Fallback to true if Redis is missing
   }
 
   async releaseLock(lockKey) {
@@ -141,7 +142,7 @@ class RefundRepository {
       return this.findRefundById(refundId, tx);
     }
 
-    await tx.$queryRaw`SELECT id FROM RefundTransaction WHERE id = ${refundId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM "RefundTransaction" WHERE id = ${refundId} FOR UPDATE`;
     return this.findRefundById(refundId, tx);
   }
 }

@@ -5,20 +5,20 @@ const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const FROM_EMAIL = process.env.FROM_EMAIL || SMTP_USER;
-const FROM_NAME = process.env.FROM_NAME || 'Auth Service';
+const FROM_NAME = process.env.FROM_NAME || 'BookFastX';
 
 let transporter;
 
 /**
- * Initialize transporter (reused from mailer.js pattern)
+ * Initialize transporter with Gmail optimized settings
  */
 async function initializeTransporter() {
-  if (transporter) {
-    return transporter;
-  }
+  if (transporter) return transporter;
 
+  console.log('📧 Initializing Email Service (Gmail SMTP)...');
+  
   if (!SMTP_USER || !SMTP_PASS) {
-    console.warn('SMTP credentials not configured. Using Ethereal for testing.');
+    console.warn('⚠️ SMTP credentials not configured. Using Ethereal for testing.');
     try {
       const testAccount = await nodemailer.createTestAccount();
       transporter = nodemailer.createTransport({
@@ -30,22 +30,35 @@ async function initializeTransporter() {
           pass: testAccount.pass,
         },
       });
+      console.log('✅ Ethereal transporter created');
       return transporter;
     } catch (err) {
-      console.error('Failed to create Ethereal test account:', err);
+      console.error('❌ Failed to create Ethereal test account:', err);
       return null;
     }
   }
 
+  // Gmail SMTP configuration
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
-    secure: SMTP_PORT === 465,
+    secure: false, // 587 uses STARTTLS
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
+    tls: {
+      rejectUnauthorized: false
+    }
   });
+
+  try {
+    await transporter.verify();
+    console.log('✅ SMTP connection verified successfully');
+  } catch (error) {
+    console.error('❌ SMTP verification failed:', error.message);
+    console.error('   Note: Ensure you are using an "App Password" if using Gmail.');
+  }
 
   return transporter;
 }
@@ -57,7 +70,7 @@ async function sendEmail(to, subject, html) {
   try {
     const mail = await initializeTransporter();
     if (!mail) {
-      console.error('Email transporter not initialized');
+      console.error('❌ Email transporter not initialized');
       return false;
     }
 
@@ -68,14 +81,17 @@ async function sendEmail(to, subject, html) {
       html,
     });
 
-    console.log('Email sent:', info.messageId);
+    console.log('✅ Email sent successfully:', info.messageId);
     if (!SMTP_USER || !SMTP_PASS) {
-      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      console.log('🔗 Preview URL:', nodemailer.getTestMessageUrl(info));
     }
 
     return true;
   } catch (error) {
-    console.error('Error sending email:', error.message);
+    console.error('❌ Error sending email:', error.message);
+    if (error.code === 'EAUTH') {
+      console.error('   Authentication failed. Please check your SMTP_USER and SMTP_PASS.');
+    }
     return false;
   }
 }
@@ -85,45 +101,25 @@ async function sendEmail(to, subject, html) {
  */
 async function sendSignupOtpEmail(email, otp) {
   const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
-        .content { background-color: #f9f9f9; padding: 30px; }
-        .otp-box { background-color: #fff; border: 2px solid #4CAF50; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0; }
-        .otp-code { font-size: 32px; font-weight: bold; color: #4CAF50; letter-spacing: 5px; font-family: monospace; }
-        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Welcome to ${FROM_NAME}!</h1>
-        </div>
-        <div class="content">
-          <h2>Verify Your Email Address</h2>
-          <p>Thank you for signing up! Use the following OTP code to verify your email:</p>
-          
-          <div class="otp-box">
-            <p style="margin: 0; color: #999; font-size: 14px;">Your OTP Code</p>
-            <div class="otp-code">${otp}</div>
-          </div>
-          
-          <p><strong>⏱️ This code will expire in 5 minutes.</strong></p>
-          <p>If you didn't create this account, please ignore this email.</p>
-        </div>
-        <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} ${FROM_NAME}. All rights reserved.</p>
-        </div>
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+      <div style="background-color: #0056b3; color: white; padding: 20px; text-align: center;">
+        <h1>BookFastX</h1>
       </div>
-    </body>
-    </html>
+      <div style="padding: 30px; line-height: 1.6;">
+        <h2>Verify Your Email</h2>
+        <p>Thank you for signing up! Please use the following code to verify your account:</p>
+        <div style="background: #f4f4f4; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #0056b3;">${otp}</span>
+        </div>
+        <p>This code will expire in 10 minutes. If you didn't request this, please ignore this email.</p>
+      </div>
+      <div style="background: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #777;">
+        &copy; ${new Date().getFullYear()} BookFastX. All rights reserved.
+      </div>
+    </div>
   `;
 
-  return await sendEmail(email, 'Your OTP Code - Verify Email', html);
+  return await sendEmail(email, 'Your OTP Code - BookFastX', html);
 }
 
 /**
@@ -131,49 +127,25 @@ async function sendSignupOtpEmail(email, otp) {
  */
 async function sendPasswordResetOtpEmail(email, otp) {
   const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #FF9800; color: white; padding: 20px; text-align: center; }
-        .content { background-color: #f9f9f9; padding: 30px; }
-        .otp-box { background-color: #fff; border: 2px solid #FF9800; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0; }
-        .otp-code { font-size: 32px; font-weight: bold; color: #FF9800; letter-spacing: 5px; font-family: monospace; }
-        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-        .warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Password Reset Request</h1>
-        </div>
-        <div class="content">
-          <h2>Reset Your Password</h2>
-          <p>We received a request to reset your password. Use the following OTP code:</p>
-          
-          <div class="otp-box">
-            <p style="margin: 0; color: #999; font-size: 14px;">Your OTP Code</p>
-            <div class="otp-code">${otp}</div>
-          </div>
-          
-          <p><strong>⏱️ This code will expire in 5 minutes.</strong></p>
-          
-          <div class="warning">
-            <strong>⚠️ Security Notice:</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
-          </div>
-        </div>
-        <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} ${FROM_NAME}. All rights reserved.</p>
-        </div>
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+      <div style="background-color: #f39c12; color: white; padding: 20px; text-align: center;">
+        <h1>BookFastX</h1>
       </div>
-    </body>
-    </html>
+      <div style="padding: 30px; line-height: 1.6;">
+        <h2>Password Reset Request</h2>
+        <p>You requested a password reset. Use the following code to proceed:</p>
+        <div style="background: #f4f4f4; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #f39c12;">${otp}</span>
+        </div>
+        <p>This code will expire in 10 minutes. If you didn't request this, your password will remain unchanged.</p>
+      </div>
+      <div style="background: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #777;">
+        &copy; ${new Date().getFullYear()} BookFastX. All rights reserved.
+      </div>
+    </div>
   `;
 
-  return await sendEmail(email, 'Your OTP Code - Reset Password', html);
+  return await sendEmail(email, 'Reset Your Password - BookFastX', html);
 }
 
 module.exports = {

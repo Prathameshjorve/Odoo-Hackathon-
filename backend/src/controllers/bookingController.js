@@ -701,6 +701,7 @@ const getUserBookings = async (req, res) => {
                         email: true,
                     },
                 },
+                refundTransaction: true,
             },
             orderBy: {
                 startTime: "desc",
@@ -773,6 +774,7 @@ const getOrganizationBookings = async (req, res) => {
                         email: true,
                     },
                 },
+                refundTransaction: true,
             },
             orderBy: {
                 startTime: "desc",

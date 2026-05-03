@@ -20,39 +20,24 @@ function buildRefundMessage({ percentage, hoursUntil, originalAmount, refundAmou
   return 'No refund is available for this cancellation window.';
 }
 
+const DEFAULT_POLICY = {
+  fullRefundHours: 48,
+  partialRefundHours: 24,
+  partialRefundPercent: 50,
+  globalProcessingFee: 0,
+  processingFee: 0,
+  requiresApproval: true,
+  rules: [],
+  isDefault: true,
+};
+
 /**
- * Calculate refund eligibility and amount based on organization policy and booking.
- * Returns an extended breakdown that can be shown directly in the UI.
+ * Internal helper to calculate refund logic given a policy object.
  */
-async function calculateRefundEligibility(booking, options = {}) {
-  if (!booking) throw new Error('Booking required');
-
-  // Booking may store `amountPaid` or `totalAmount` depending on data model
-  const originalAmount = booking.amountPaid || booking.totalAmount || 0;
-
-  // Find organization's refund policy
-  const orgId = booking.organizationId || (booking.appointment && booking.appointment.organizationId) || booking.organizationId;
-  const policy = await prisma.refundPolicy.findUnique({ where: { organizationId: orgId } });
-
-  if (!policy) {
-    return {
-      eligible: false,
-      refundAmount: 0,
-      originalAmount,
-      reason: 'Refund policy not configured for organization',
-      policy: null,
-      breakdown: {
-        originalAmount,
-        refundAmount: 0,
-        processingFee: 0,
-        finalAmount: 0,
-        ruleApplied: 'NO_POLICY',
-      },
-    };
-  }
-
+function calculateWithPolicy(booking, policy, originalAmount, options = {}) {
   const now = options.currentTime ? new Date(options.currentTime) : new Date();
   const start = new Date(booking.startTime);
+
   if (now >= start) {
     return {
       eligible: false,
@@ -181,6 +166,31 @@ async function calculateRefundEligibility(booking, options = {}) {
     },
     message: 'Refund not allowed because the appointment is too close to the scheduled time.',
   };
+}
+
+/**
+ * Calculate refund eligibility and amount based on organization policy and booking.
+ * Returns an extended breakdown that can be shown directly in the UI.
+ */
+async function calculateRefundEligibility(booking, options = {}) {
+  if (!booking) throw new Error('Booking required');
+
+  // Booking may store `amountPaid` or `totalAmount` depending on data model
+  const originalAmount = booking.amountPaid || booking.totalAmount || 0;
+
+  // Find organization's refund policy
+  const orgId = booking.organizationId || (booking.appointment && booking.appointment.organizationId) || booking.organizationId;
+  let policy = await prisma.refundPolicy.findUnique({ where: { organizationId: orgId } });
+
+  if (!policy) {
+    // Return a default policy if none is configured
+    policy = {
+      ...DEFAULT_POLICY,
+      organizationId: orgId,
+    };
+  }
+
+  return calculateWithPolicy(booking, policy, originalAmount, options);
 }
 
 module.exports = { calculateRefundEligibility };

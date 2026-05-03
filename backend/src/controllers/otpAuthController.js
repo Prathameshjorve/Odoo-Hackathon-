@@ -163,6 +163,29 @@ class OtpAuthController {
       return res.status(400).json({ success: false, message: err.message || 'Failed to reset password' });
     }
   }
+
+  async testMail(req, res) {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+      
+      const { sendEmail } = require('../lib/mailer');
+      const result = await sendEmail(
+        email, 
+        'Test Email from BookFastX', 
+        '<h1>Hello!</h1><p>This is a test email to verify your SMTP configuration is working correctly.</p>'
+      );
+      
+      if (result) {
+        res.json({ success: true, message: 'Test email sent successfully' });
+      } else {
+        res.status(500).json({ success: false, message: 'Failed to send test email. Check server logs for errors.' });
+      }
+    } catch (err) {
+      console.error('Test mail error:', err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
 }
 
 module.exports = new OtpAuthController();

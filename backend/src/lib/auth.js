@@ -330,6 +330,27 @@ async function markPasswordResetTokenUsed(tokenId) {
   });
 }
 
+/**
+ * Generate both access and refresh tokens
+ */
+async function generateTokens(userId, email, sessionMetadata = {}) {
+  const accessToken = generateAccessToken(userId, email);
+  const refreshToken = await createRefreshToken(userId, sessionMetadata);
+  return { accessToken, refreshToken };
+}
+
+/**
+ * Set refresh token cookie
+ */
+function setRefreshTokenCookie(res, refreshToken) {
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
+  });
+}
+
 module.exports = {
   hashPassword,
   verifyPassword,
@@ -351,4 +372,6 @@ module.exports = {
   createPasswordResetToken,
   verifyPasswordResetToken,
   markPasswordResetTokenUsed,
+  generateTokens,
+  setRefreshTokenCookie,
 };

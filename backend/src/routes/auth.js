@@ -61,6 +61,9 @@ router.post('/verify-forgot-password-otp', otpAuthController.verifyForgotPasswor
 // Complete password reset after OTP has been verified
 router.post('/complete-forgot-password-reset', otpAuthController.completeForgotPasswordReset);
 
+// Test email route
+router.post('/test-mail', otpAuthController.testMail);
+
 // Resend OTP (generic)
 router.post('/resend-otp', otpAuthController.resendOtp);
 

@@ -23,6 +23,7 @@ export const navigationByRole = {
     { href: "/dashboard/org/resources", label: "Resources", icon: Briefcase },
     { href: "/dashboard/org/users", label: "Team", icon: Users },
     { href: "/dashboard/org/payments", label: "Payments", icon: CreditCard },
+    { href: "/dashboard/org/reports", label: "Reports", icon: BarChart3 },
     { href: "/dashboard/org/settings", label: "Settings", icon: Settings },
   ],
   admin: [

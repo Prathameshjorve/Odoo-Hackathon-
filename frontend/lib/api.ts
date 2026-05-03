@@ -322,6 +322,9 @@ export const organizationApi = {
     expiryCapacity?: number;
   }) =>
     api.post(`/appointments/${appointmentId}/secret-link`, data, token),
+
+  getReports: (token: string, days: number = 30) =>
+    api.get(`/organization/reports?days=${days}`, token),
 };
 
 // Booking API functions

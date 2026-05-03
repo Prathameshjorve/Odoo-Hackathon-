@@ -22,7 +22,7 @@ import {
   Clock,
   User,
   MapPin,
-  DollarSign,
+  IndianRupee,
   CheckCircle2,
   ArrowLeft,
   Image as ImageIcon,
@@ -879,9 +879,9 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="price">Price (USD)</Label>
+                        <Label htmlFor="price">Price (INR)</Label>
                         <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <Input
                             id="price"
                             type="number"
@@ -1232,10 +1232,10 @@ export function CreateAppointment({ onBack }: { onBack?: () => void }) {
                 {formData.price && (
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <DollarSign className="w-4 h-4" />
+                      <IndianRupee className="w-4 h-4" />
                       <span>Price</span>
                     </div>
-                    <span className="font-semibold text-green-600">${formData.price}</span>
+                    <span className="font-semibold text-green-600">₹{formData.price}</span>
                   </div>
                 )}
 

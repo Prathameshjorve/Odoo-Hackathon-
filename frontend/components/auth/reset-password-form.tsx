@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +10,9 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Loader, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { Loader, AlertCircle, CheckCircle, Eye, EyeOff, ShieldCheck, ShieldAlert, Check, X } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 export function ResetPasswordForm({
   className,
@@ -27,29 +28,41 @@ export function ResetPasswordForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Password strength logic
+  const passwordRequirements = useMemo(() => [
+    { label: "At least 8 characters", met: newPassword.length >= 8 },
+    { label: "At least one uppercase letter", met: /[A-Z]/.test(newPassword) },
+    { label: "At least one number", met: /[0-9]/.test(newPassword) },
+    { label: "At least one special character", met: /[^A-Za-z0-9]/.test(newPassword) },
+  ], [newPassword]);
+
+  const passwordStrength = useMemo(() => {
+    if (!newPassword) return 0;
+    return passwordRequirements.filter(req => req.met).length;
+  }, [newPassword, passwordRequirements]);
+
+  const isPasswordStrong = passwordStrength === 4;
+
   // Get token and email from URL params
   const token = searchParams.get("token");
   const email = searchParams.get("email");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    
+    if (!isPasswordStrong) {
+      setError("Please create a stronger password meeting all requirements");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setIsPending(true);
     setError("");
     setSuccess(false);
-
-    // Validate passwords match
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      setIsPending(false);
-      return;
-    }
-
-    // Validate password length
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters long");
-      setIsPending(false);
-      return;
-    }
 
     // Validate token and email exist
     if (!token || !email) {
@@ -76,6 +89,20 @@ export function ResetPasswordForm({
       setIsPending(false);
     }
   }
+
+  const getStrengthColor = () => {
+    if (passwordStrength === 0) return "bg-muted";
+    if (passwordStrength <= 2) return "bg-red-500";
+    if (passwordStrength === 3) return "bg-amber-500";
+    return "bg-green-500";
+  };
+
+  const getStrengthLabel = () => {
+    if (passwordStrength === 0) return "";
+    if (passwordStrength <= 2) return "Weak";
+    if (passwordStrength === 3) return "Moderate";
+    return "Strong";
+  };
 
   // Show error if no token or email in URL
   if (!token || !email) {
@@ -153,9 +180,11 @@ export function ResetPasswordForm({
               onChange={(e) => setNewPassword(e.target.value)}
               required
               disabled={isPending || success}
-              minLength={8}
-              placeholder="Enter new password"
-              className="transition-all duration-200 focus:ring-2"
+              placeholder="Enter new strong password"
+              className={cn(
+                "transition-all duration-200 focus:ring-2",
+                newPassword && (isPasswordStrong ? "border-green-500" : "border-red-300")
+              )}
             />
             <button
               type="button"
@@ -170,9 +199,44 @@ export function ResetPasswordForm({
               )}
             </button>
           </div>
-          <FieldDescription>
-            Must be at least 8 characters long
-          </FieldDescription>
+          
+          {/* Password Strength Indicator */}
+          {newPassword && !success && (
+            <div className="mt-2 space-y-2 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1">
+                  {isPasswordStrong ? (
+                    <ShieldCheck className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <ShieldAlert className="h-3 w-3 text-amber-500" />
+                  )}
+                  Strength: <span className="font-bold">{getStrengthLabel()}</span>
+                </span>
+                <span>{passwordStrength}/4 requirements met</span>
+              </div>
+              <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                <div 
+                  className={cn("h-full transition-all duration-500", getStrengthColor())} 
+                  style={{ width: `${(passwordStrength / 4) * 100}%` }}
+                />
+              </div>
+              
+              <ul className="grid grid-cols-2 gap-1 mt-2">
+                {passwordRequirements.map((req, i) => (
+                  <li key={i} className="flex items-center gap-1 text-[10px]">
+                    {req.met ? (
+                      <Check className="h-3 w-3 text-green-500 shrink-0" />
+                    ) : (
+                      <X className="h-3 w-3 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={req.met ? "text-foreground" : "text-muted-foreground"}>
+                      {req.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Field>
 
         {/* CONFIRM PASSWORD */}
@@ -185,9 +249,11 @@ export function ResetPasswordForm({
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               disabled={isPending || success}
-              minLength={8}
               placeholder="Confirm new password"
-              className="transition-all duration-200 focus:ring-2"
+              className={cn(
+                "transition-all duration-200 focus:ring-2",
+                confirmPassword && newPassword === confirmPassword ? "border-green-500" : (confirmPassword ? "border-red-300" : "")
+              )}
             />
             <button
               type="button"
@@ -202,14 +268,20 @@ export function ResetPasswordForm({
               )}
             </button>
           </div>
+          {confirmPassword && newPassword !== confirmPassword && (
+            <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+          )}
         </Field>
 
         {/* SUBMIT */}
         <Field>
           <Button
             type="submit"
-            className="w-full hover:shadow-md transition-all duration-200"
-            disabled={isPending || success}
+            className={cn(
+              "w-full hover:shadow-md transition-all duration-200",
+              !isPasswordStrong || newPassword !== confirmPassword ? "bg-muted text-muted-foreground hover:bg-muted" : "bg-primary"
+            )}
+            disabled={isPending || success || !isPasswordStrong || newPassword !== confirmPassword}
           >
             {isPending ? (
               <span className="flex items-center gap-2">
@@ -217,7 +289,7 @@ export function ResetPasswordForm({
                 Resetting password...
               </span>
             ) : success ? (
-              "Redirecting..."
+              "Redirecting to login..."
             ) : (
               "Reset password"
             )}

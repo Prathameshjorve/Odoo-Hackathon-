@@ -4,7 +4,7 @@ const prisma = require('../lib/prisma');
 const { hashPassword } = require('../lib/auth');
 const { sendMemberInvitationEmail } = require('../lib/mailer');
 const { createAppointment, getOrganizationAppointments, getSingleAppointment } = require('../controllers/appointmentController');
-const { updateOrganization } = require('../controllers/organizationController');
+const { updateOrganization, getReports } = require('../controllers/organizationController');
 const { createNotification, notifyOrganizationMembers } = require('../lib/notificationHelper');
 
 const router = express.Router();
@@ -748,5 +748,10 @@ router.get('/appointments', getOrganizationAppointments);
  * Get single appointment (ADMIN or MEMBER)
  */
 router.get('/appointments/:id', getSingleAppointment);
+
+/**
+ * Get organization reports (ADMIN only)
+ */
+router.get('/reports', getReports);
 
 module.exports = router;

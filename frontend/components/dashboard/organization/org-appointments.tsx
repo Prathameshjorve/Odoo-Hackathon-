@@ -251,7 +251,7 @@ export default function OrgAppointments() {
                     </span>
                     {appointment.isPaid && (
                       <Badge variant="default" className="w-fit bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20 border border-green-500/20">
-                        💰 Paid${appointment.price ? ` - $${appointment.price}` : ''}
+                        💰 Paid{appointment.price ? ` - ₹${appointment.price}` : ''}
                       </Badge>
                     )}
                   </div>

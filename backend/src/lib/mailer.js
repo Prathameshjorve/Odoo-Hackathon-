@@ -5,7 +5,7 @@ const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const FROM_EMAIL = process.env.FROM_EMAIL || SMTP_USER;
-const FROM_NAME = process.env.FROM_NAME || 'Auth API';
+const FROM_NAME = process.env.FROM_NAME || 'BookFastX';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
 
 let transporter;
@@ -15,23 +15,34 @@ let senderEmail = FROM_EMAIL || 'no-reply@bookfastx.local';
  * Initialize email transporter
  */
 async function initializeMailer() {
+  if (transporter) return transporter;
+
+  console.log('📧 Initializing SMTP transporter...');
+  console.log(`   Host: ${SMTP_HOST}`);
+  console.log(`   Port: ${SMTP_PORT}`);
+  console.log(`   User: ${SMTP_USER || 'Not configured'}`);
+  if (SMTP_USER && SMTP_PASS) {
+    console.log(`   Pass: ${SMTP_PASS.substring(0, 2)}****${SMTP_PASS.substring(SMTP_PASS.length - 2)} (App Password)`);
+  }
+
   if (!SMTP_USER || !SMTP_PASS) {
-    console.warn('SMTP credentials not configured. Using Ethereal for testing.');
+    console.warn('⚠️ SMTP credentials not configured. Using Ethereal for testing.');
     try {
       const testAccount = await nodemailer.createTestAccount();
       senderEmail = testAccount.user;
       transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
-        secure: false, // true for 465, false for other ports
+        secure: false,
         auth: {
-          user: testAccount.user, // generated ethereal user
-          pass: testAccount.pass, // generated ethereal password
+          user: testAccount.user,
+          pass: testAccount.pass,
         },
       });
+      console.log('✅ Ethereal transporter created');
       return transporter;
     } catch (err) {
-      console.error('Failed to create Ethereal test account:', err);
+      console.error('❌ Failed to create Ethereal test account:', err);
       return null;
     }
   }
@@ -39,14 +50,25 @@ async function initializeMailer() {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
-    secure: SMTP_PORT === 465,
+    secure: false, // true for 465, false for 587
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
+    tls: {
+      rejectUnauthorized: false // Helps with some local dev environments
+    }
   });
-  senderEmail = FROM_EMAIL || SMTP_USER;
 
+  // Verify connection configuration
+  try {
+    await transporter.verify();
+    console.log('✅ SMTP connection verified successfully');
+  } catch (error) {
+    console.error('❌ SMTP verification failed:', error.message);
+  }
+
+  senderEmail = FROM_EMAIL || SMTP_USER;
   return transporter;
 }
 
@@ -54,6 +76,10 @@ async function initializeMailer() {
  * Send email
  */
 async function sendEmail(to, subject, html) {
+  if (!transporter) {
+    await initializeMailer();
+  }
+  
   if (!transporter) {
     console.warn('Email not sent - transporter not initialized');
     return false;

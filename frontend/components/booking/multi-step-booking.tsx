@@ -25,7 +25,7 @@ import {
     ArrowRight,
     Calendar as CalendarIcon,
     Clock,
-    DollarSign,
+    IndianRupee,
     Loader2,
     CheckCircle2,
     Info,
@@ -514,7 +514,7 @@ export function MultiStepBooking({ appointment, onSuccess, onCancel }: MultiStep
                             </div>
                             {appointment.isPaid && appointment.price !== null && (
                                 <Badge variant="secondary" className="text-lg px-4 py-2">
-                                    <DollarSign className="w-4 h-4 mr-1" />
+                                    <IndianRupee className="w-4 h-4 mr-1" />
                                     {appointment.price}
                                 </Badge>
                             )}
@@ -1034,8 +1034,8 @@ export function MultiStepBooking({ appointment, onSuccess, onCancel }: MultiStep
                         </div>
                         {appointment.isPaid && (
                             <div className="flex items-center gap-2">
-                                <DollarSign className="w-5 h-5 text-muted-foreground" />
-                                <span>${(appointment.price || 0) * numberOfSlots}</span>
+                                <IndianRupee className="w-5 h-5 text-muted-foreground" />
+                                <span>₹{(appointment.price || 0) * numberOfSlots}</span>
                             </div>
                         )}
                     </CardContent>

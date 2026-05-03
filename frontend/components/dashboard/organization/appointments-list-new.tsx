@@ -388,7 +388,7 @@ export default function OrganizationAppointmentsList() {
                 <Card className="border-l-4 border-l-purple-500">
                     <CardHeader className="pb-3">
                         <CardDescription>Total Revenue</CardDescription>
-                        <CardTitle className="text-3xl font-bold">${stats.revenue.toFixed(2)}</CardTitle>
+                        <CardTitle className="text-3xl font-bold">₹{stats.revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -658,7 +658,7 @@ export default function OrganizationAppointmentsList() {
                                                     )}
                                                     {booking.totalAmount > 0 && (
                                                         <span className="text-xs text-muted-foreground">
-                                                            ${booking.totalAmount.toFixed(2)}
+                                                            ₹{booking.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                         </span>
                                                     )}
                                                 </div>

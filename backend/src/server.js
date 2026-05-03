@@ -108,6 +108,7 @@ app.use('/notifications', notificationRoutes);
 app.use('/reminders', reminderRoutes); // Reminder routes for n8n scheduler
 app.use('/api/v1', refundRoutes);
 app.use('/api', refundRoutes);
+app.use('/', refundRoutes);
 
 // Razorpay refund webhook endpoint
 app.post('/webhooks/razorpay/refund', (req, res) => handleRazorpayRefundWebhook(req, res));

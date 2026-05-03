@@ -10,6 +10,19 @@ const { refundEventBus } = require('./refunds/refundEventBus');
 const { RazorpayRefundClient } = require('./razorpayRefundClient');
 const { createRefundQueue, registerRefundProcessor } = require('../workers/refundQueue');
 const { auditLogService } = require('./refunds/auditLogService');
+const { createNotification, notifyOrganizationMembers } = require('../lib/notificationHelper');
+
+const DEFAULT_POLICY = {
+  fullRefundHours: 48,
+  partialRefundHours: 24,
+  partialRefundPercent: 50,
+  globalProcessingFee: 0,
+  processingFee: 0,
+  requiresApproval: true,
+  rules: [],
+  maxRefundRequestsPerUserPerMonth: 10,
+  allowAutoApproval: true,
+};
 
 class RefundService {
   constructor({
@@ -51,6 +64,25 @@ class RefundService {
         payload,
         checksum: this.createChecksum(payload),
       }).catch(() => null);
+
+      // Notify Organization
+      try {
+        const booking = await this.repository.findBookingById(payload.bookingId);
+        if (booking && booking.appointment && booking.appointment.organizationId) {
+          const userIdentifier = booking.user?.name || booking.user?.email || 'A user';
+          await notifyOrganizationMembers({
+            organizationId: booking.appointment.organizationId,
+            type: 'REFUND_REQUESTED',
+            title: 'New Refund Request',
+            message: `${userIdentifier} has requested a refund of ₹${payload.amount} for booking ${payload.bookingId}.`,
+            relatedId: payload.refundTransactionId,
+            relatedType: 'refund',
+            actionUrl: `/dashboard/org/payments`,
+          });
+        }
+      } catch (err) {
+        this.logger.error?.('Failed to notify organization about refund request', err);
+      }
     });
 
     this.eventBus.on('refund.approved', async (payload) => {
@@ -69,6 +101,24 @@ class RefundService {
         payload,
         checksum: this.createChecksum(payload),
       }).catch(() => null);
+
+      // Notify User
+      try {
+        const refund = await this.repository.findRefundById(payload.refundTransactionId);
+        if (refund && refund.booking && refund.booking.userId) {
+          await createNotification({
+            userId: refund.booking.userId,
+            type: 'REFUND_PROCESSED',
+            title: 'Refund Processed',
+            message: `Your refund of ₹${refund.refundAmount || refund.amount} for booking ${refund.bookingId} has been successfully processed.`,
+            relatedId: refund.id,
+            relatedType: 'refund',
+            actionUrl: `/dashboard/user/appointments`,
+          });
+        }
+      } catch (err) {
+        this.logger.error?.('Failed to notify user about refund completion', err);
+      }
     });
 
     this.eventBus.on('refund.failed', async (payload) => {
@@ -181,10 +231,7 @@ class RefundService {
       }
 
       const organizationId = booking.appointment?.organizationId;
-      const policy = await this.repository.findPolicyByOrganizationId(organizationId);
-      if (!policy) {
-        throw new IneligibleRefundError('Refund policy not configured', 'POLICY_NOT_CONFIGURED', { organizationId });
-      }
+      const policy = (await this.repository.findPolicyByOrganizationId(organizationId)) || DEFAULT_POLICY;
 
       const db = this.repository.db || prisma;
       const userMonthlyCount = await db.refundTransaction.count({

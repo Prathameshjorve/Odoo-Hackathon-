@@ -77,17 +77,21 @@ export default function AuthLayout({
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-muted/30 p-6 md:p-10">
-      <div className="w-full max-w-md space-y-8">
+    <div className="flex min-h-svh items-center justify-center bg-muted/30 p-6 md:p-10 relative overflow-hidden">
+      {/* Premium background decorations */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+      
+      <div className="w-full max-w-md space-y-8 relative z-10 animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="flex flex-col items-center gap-2">
-          <a href="/" className="flex items-center gap-2 font-medium">
-            <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-xl shadow-lg shadow-primary/20">
-              <Package className="size-5" />
+          <a href="/" className="flex items-center gap-2 font-medium group transition-all duration-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 p-1.5 overflow-hidden shadow-lg shadow-primary/10 group-hover:scale-110 transition-transform duration-300">
+              <img src="/logo.png" alt="BookFastX Logo" className="h-full w-full object-contain" />
             </div>
-            <span className="text-2xl font-bold tracking-tight"> BookFastX </span>
+            <span className="text-2xl font-bold tracking-tight group-hover:text-primary transition-colors"> BookFastX </span>
           </a>
         </div>
-        <div className="bg-background border rounded-2xl p-8 shadow-xl shadow-foreground/5 backdrop-blur-sm">
+        <div className="bg-background/80 border rounded-3xl p-8 shadow-2xl shadow-foreground/5 backdrop-blur-md hover:shadow-primary/5 transition-all duration-500">
           {children}
         </div>
       </div>

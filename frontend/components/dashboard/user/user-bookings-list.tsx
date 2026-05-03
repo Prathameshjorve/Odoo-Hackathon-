@@ -50,6 +50,12 @@ const getStatusColor = (status: string) => {
             return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
         case "cancelled":
             return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
+        case "approved":
+            return "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20";
+        case "processing":
+            return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 animate-pulse";
+        case "rejected":
+            return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
         default:
             return "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20";
     }
@@ -65,6 +71,10 @@ const getPaymentStatusColor = (status: string) => {
             return "bg-purple-500/10 text-purple-700 dark:text-purple-400";
         case "failed":
             return "bg-red-500/10 text-red-700 dark:text-red-400";
+        case "approved":
+            return "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400";
+        case "processing":
+            return "bg-blue-500/10 text-blue-700 dark:text-blue-400 animate-pulse";
         default:
             return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
     }
@@ -404,20 +414,29 @@ export default function UserBookingsList() {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge className={getStatusColor(booking.bookingStatus)} variant="outline">
-                                                    {booking.bookingStatus}
+                                                <Badge 
+                                                    className={getStatusColor(booking.refundTransaction ? (booking.refundTransaction.status === 'COMPLETED' ? 'REFUNDED' : booking.refundTransaction.status) : booking.bookingStatus)} 
+                                                    variant="outline"
+                                                >
+                                                    {booking.refundTransaction ? (booking.refundTransaction.status === 'COMPLETED' ? 'REFUNDED' : booking.refundTransaction.status) : booking.bookingStatus}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col gap-1">
-                                                    {booking.paymentStatus === "PAID" && (
+                                                    {booking.refundTransaction ? (
+                                                        <Badge className={getPaymentStatusColor(booking.refundTransaction.status === 'COMPLETED' ? 'REFUNDED' : booking.refundTransaction.status)}>
+                                                            {booking.refundTransaction.status === 'COMPLETED' ? 'REFUNDED' : 
+                                                             booking.refundTransaction.status === 'APPROVED' ? 'REFUND APPROVED' : 
+                                                             booking.refundTransaction.status}
+                                                        </Badge>
+                                                    ) : booking.paymentStatus && (
                                                         <Badge className={getPaymentStatusColor(booking.paymentStatus)}>
                                                             {booking.paymentStatus}
                                                         </Badge>
                                                     )}
                                                     {(booking.totalAmount || 0) > 0 && (
                                                         <span className="text-xs text-muted-foreground">
-                                                            ${(booking.totalAmount || 0).toFixed(2)}
+                                                            ₹{(booking.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                         </span>
                                                     )}
                                                 </div>
@@ -541,7 +560,7 @@ export default function UserBookingsList() {
                                             {selectedBooking.bookingStatus}
                                         </Badge>
                                     </div>
-                                    {selectedBooking.paymentStatus === "PAID" && (
+                                    {selectedBooking.paymentStatus && (
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm text-muted-foreground">Payment Status</span>
                                             <Badge className={getPaymentStatusColor(selectedBooking.paymentStatus)}>
@@ -549,11 +568,19 @@ export default function UserBookingsList() {
                                             </Badge>
                                         </div>
                                     )}
+                                    {selectedBooking.paymentStatus === "REFUNDED" && selectedRefund?.completedAt && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-muted-foreground">Refunded Date</span>
+                                            <span className="font-medium text-purple-600">
+                                                {format(new Date(selectedRefund.completedAt), "MMM dd, yyyy 'at' h:mm a")}
+                                            </span>
+                                        </div>
+                                    )}
                                     {(selectedBooking.totalAmount || 0) > 0 && (
                                         <div className="flex items-center justify-between pt-2 border-t">
                                             <span className="font-medium">Total Amount</span>
                                             <span className="text-xl font-bold">
-                                                ${(selectedBooking.totalAmount || 0).toFixed(2)}
+                                                ₹{(selectedBooking.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                     )}

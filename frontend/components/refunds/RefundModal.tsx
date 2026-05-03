@@ -32,6 +32,7 @@ export function RefundModal({
   const [reason, setReason] = React.useState("CUSTOMER_REQUEST");
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
+  const [showPolicy, setShowPolicy] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -131,18 +132,41 @@ export function RefundModal({
                     <p className="text-sm text-muted-foreground">Estimated refund</p>
                     <div className="text-3xl font-bold">₹{Number(amount).toLocaleString()}</div>
                   </div>
-                  <Badge variant="outline" className="gap-1">
+                   <Badge 
+                    variant="outline" 
+                    className="gap-1 cursor-help hover:bg-accent transition-colors"
+                    onClick={() => setShowPolicy(!showPolicy)}
+                  >
                     <Sparkles className="h-3.5 w-3.5" />
-                    {eligibility?.ruleApplied || "POLICY"}
+                    {eligibility?.ruleApplied || "VIEW POLICY"}
                   </Badge>
                 </div>
 
                 <div className="rounded-lg bg-background p-4 text-sm">
                   <p className="font-medium text-foreground">{eligibility?.message || eligibility?.reason || "Refund evaluation complete."}</p>
                   <p className="mt-1 text-muted-foreground">
-                    ₹{Number(original).toLocaleString()} original amount {processingFee > 0 ? `• ${processingFee} processing fee` : ""} {finalAmount !== amount ? `• final amount ₹${Number(finalAmount).toLocaleString()}` : ""}
+                    ₹{Number(original).toLocaleString()} original amount {processingFee > 0 ? `• ₹${processingFee} fee` : ""} {finalAmount !== amount ? `• final ₹${Number(finalAmount).toLocaleString()}` : ""}
                   </p>
                 </div>
+
+                {showPolicy && eligibility?.policy && (
+                  <div className="animate-in slide-in-from-top-2 duration-300 rounded-lg border bg-accent/30 p-4 text-xs space-y-2 mt-2">
+                    <p className="font-semibold flex items-center gap-1.5">
+                      <ShieldCheck className="h-3 w-3" />
+                      Current Refund Policy:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>Full refund available if cancelled <strong>{eligibility.policy.fullRefundHours} hours</strong> before start.</li>
+                      {eligibility.policy.partialRefundHours && (
+                        <li><strong>{eligibility.policy.partialRefundPercent}% refund</strong> available if cancelled {eligibility.policy.partialRefundHours} hours before start.</li>
+                      )}
+                      {Number(eligibility.policy.processingFee || eligibility.policy.globalProcessingFee) > 0 && (
+                        <li>A processing fee of <strong>₹{eligibility.policy.processingFee || eligibility.policy.globalProcessingFee}</strong> will be deducted.</li>
+                      )}
+                      <li>Requires manual approval: <strong>{eligibility.policy.requiresApproval ? "Yes" : "No"}</strong></li>
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
