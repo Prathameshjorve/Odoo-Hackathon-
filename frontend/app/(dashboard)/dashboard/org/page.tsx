@@ -145,6 +145,21 @@ export default function OrganizationPage() {
                         </CardContent>
                     </Card>
                 </Link>
+
+                <Link href="/dashboard/org/refunds" className="group">
+                    <Card className="h-full hover:shadow-lg hover:border-primary/50 transition-all duration-300 cursor-pointer">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div className="p-2 bg-rose-500/10 rounded-lg group-hover:bg-rose-500/20 transition-colors">
+                                    <Shield className="h-5 w-5 text-rose-500" />
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            </div>
+                            <h3 className="font-semibold mt-3">Refunds</h3>
+                            <p className="text-sm text-muted-foreground">Manage refunds and policy</p>
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
 
             {/* Main Content Grid */}

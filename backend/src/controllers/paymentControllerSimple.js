@@ -1,10 +1,12 @@
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+function getRazorpayInstance() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) return null;
+  return new Razorpay({ key_id: keyId, key_secret: keySecret });
+}
 
 exports.createOrder = async (req, res) => {
   try {
@@ -41,6 +43,11 @@ exports.createOrder = async (req, res) => {
       }
     };
 
+    const razorpay = getRazorpayInstance();
+    if (!razorpay) {
+      return res.status(503).json({ success: false, message: 'Razorpay not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in environment.' });
+    }
+
     const order = await razorpay.orders.create(options);
     
     // Return full order object as requested, plus merchantKeyId for frontend
@@ -74,6 +81,10 @@ exports.verifyPayment = async (req, res) => {
         success: false, 
         message: "Missing payment details" 
       });
+    }
+
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(503).json({ success: false, message: 'Razorpay secret not configured.' });
     }
 
     const sign = razorpay_order_id + "|" + razorpay_payment_id;

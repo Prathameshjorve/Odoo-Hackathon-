@@ -13,6 +13,7 @@ model User {
   password                String
   name                    String?
   emailVerified           Boolean                  @default(false)
+  lastOtpSentAt           DateTime?
   otp                     String?
   otpExpiry               DateTime?
   createdAt               DateTime                 @default(now())
@@ -30,6 +31,8 @@ model User {
   bookings                Booking[]
   assignedBookings        Booking[]                @relation("AssignedBookings")
   notifications           Notification[]
+  handledRefunds         RefundTransaction[]
+  refundAuditLogs         RefundAuditLog[]
 
   @@index([organizationId])
 }
@@ -82,12 +85,34 @@ model PasswordResetToken {
   @@index([email])
 }
 
+model OtpRecord {
+  id         String     @id @default(cuid())
+  email      String
+  otpCode    String
+  purpose    OtpPurpose
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  attempts   Int        @default(0)
+  createdAt  DateTime   @default(now())
+
+  @@index([email, purpose])
+  @@index([otpCode])
+}
+
+enum OtpPurpose {
+  SIGNUP
+  LOGIN
+  PASSWORD_RESET
+}
+
 model Organization {
   id                 String                          @id @default(cuid())
   name               String
   location           String
   description        String?
   businessHours      Json
+  timezone           String?
+  blackoutDates      Json?
   adminId            String                          @unique
   createdAt          DateTime                        @default(now())
   updatedAt          DateTime                        @updatedAt
@@ -96,11 +121,197 @@ model Organization {
   resources          Resource[]
   members            User[]                          @relation("OrganizationMembers")
   razorpayConnection OrganizationRazorpayConnection?
+  refundPolicy        RefundPolicy?
   bolnaApiKey        String?
   bolnaAgents        BolnaAgent[]
   bolnaCalls         BolnaCall[]
 
   @@index([adminId])
+}
+
+/// Refund policy per organization
+model RefundPolicy {
+  id                   String   @id @default(cuid())
+  organizationId       String   @unique
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  rules                Json
+  specialRules         Json?
+  globalProcessingFee   Int      @default(0)
+  requiresApproval     Boolean  @default(true)
+  autoProcessAbove     Int?
+  allowAutoApproval    Boolean  @default(true)
+  maxRefundRequestsPerBooking Int @default(3)
+  maxRefundRequestsPerUserPerMonth Int @default(10)
+  allowWalletCredits   Boolean  @default(false)
+  version              Int      @default(1)
+
+  // Backward-compatible tier settings
+  fullRefundHours      Int      @default(48)
+  partialRefundHours   Int?
+  partialRefundPercent Int      @default(50)
+  processingFee        Int      @default(0) // in cents
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  FAILED
+  PARTIAL
+  CANCELLED
+  REJECTED
+  REQUIRES_MANUAL
+}
+
+enum RefundReason {
+  CUSTOMER_REQUEST
+  EVENT_CANCELLED
+  EVENT_RESCHEDULED
+  DUPLICATE_PAYMENT
+  FRAUDULENT
+  SERVICE_ISSUE
+  TECHNICAL_ERROR
+  OTHER
+}
+
+enum RefundType {
+  FULL
+  PARTIAL
+  CUSTOM
+}
+
+model RefundTransaction {
+  id               String       @id @default(cuid())
+  bookingId        String       @unique
+  booking          Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  originalAmount   Int?
+  refundAmount     Int?
+  processingFee    Int          @default(0)
+  gatewayFee       Int          @default(0)
+  netAmount        Int?
+
+  razorpayPaymentId String?
+  razorpayRefundId String?
+  razorpayWebhookId String?
+
+  status           RefundStatus @default(PENDING)
+  statusHistory    Json?
+
+  refundReason     RefundReason?
+  reasonDetails    String?
+  refundType       RefundType   @default(FULL)
+  refundBreakdown  Json?
+  eligibilityMessage String?
+  ruleApplied      String?
+  timeline         Json?
+
+  requestedBy      String?
+  requestedAt      DateTime     @default(now())
+  approvedBy       String?
+  approvedAt       DateTime?
+  processedBy      String?
+  processedAt      DateTime?
+  completedAt      DateTime?
+  failedAt         DateTime?
+  overrideAmount   Int?
+  emergencyRefund  Boolean      @default(false)
+  requestedByRole  String?
+
+  metadata         Json?
+  idempotencyKey   String?      @unique
+  retryCount       Int          @default(0)
+  lastError        String?
+
+  attempts         Int          @default(0)
+  amount           Int?
+  reason           String?
+  adminId          String?
+  admin            User?        @relation(fields: [adminId], references: [id])
+  refundEvents     RefundEvent[]
+  retryQueue       RefundRetryQueue[]
+  auditLogs        RefundAuditLog[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
+  @@index([razorpayRefundId])
+}
+
+model RefundEvent {
+  id                 String   @id @default(cuid())
+  refundTransactionId String
+  refundTransaction   RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
+  eventType           String
+  payload             Json
+  checksum            String
+  createdAt           DateTime @default(now())
+
+  @@index([refundTransactionId])
+  @@index([eventType])
+}
+
+model RefundWebhookEvent {
+  id               String   @id @default(cuid())
+  eventId          String   @unique
+  eventType        String
+  payload          Json
+  signature        String?
+  status           QueueStatus @default(PENDING)
+  processedAt      DateTime?
+  lastError        String?
+  createdAt        DateTime @default(now())
+
+  @@index([eventType])
+  @@index([status])
+}
+
+model RefundRetryQueue {
+  id                   String   @id @default(cuid())
+  refundTransactionId   String
+  refundTransaction     RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
+  attemptNumber         Int
+  scheduledAt           DateTime
+  lastError             String?
+  status                QueueStatus @default(PENDING)
+  createdAt             DateTime @default(now())
+  processedAt           DateTime?
+
+  @@index([refundTransactionId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model RefundAuditLog {
+  id                   String   @id @default(cuid())
+  refundTransactionId   String
+  refundTransaction     RefundTransaction @relation(fields: [refundTransactionId], references: [id], onDelete: Cascade)
+  userId                String?
+  user                  User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role                  String?
+  action                String
+  ipAddress             String?
+  userAgent             String?
+  metadata              Json?
+  createdAt             DateTime @default(now())
+
+  @@index([refundTransactionId])
+  @@index([userId])
+  @@index([action])
+}
+
+enum QueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 model Resource {
@@ -140,6 +351,11 @@ model Appointment {
   isPaid              Boolean             @default(false)
   location            String?
   picture             String?
+  timezone            String?
+  bufferMinutes       Int?                @default(15)
+  blackoutDates       Json?
+  dailyCapacity       Int?
+  weeklyCapacity      Int?
   organizationId      String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
@@ -238,6 +454,8 @@ model Booking {
   paymentStatus  PaymentStatus @default(PENDING)
   bookingStatus  BookingStatus @default(PENDING)
   totalAmount    Int?
+  amountPaid     Int?          // amount actually paid (in smallest currency unit)
+  razorpayPaymentId String?    // optional payment id for refunds
   notes          String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -245,6 +463,7 @@ model Booking {
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   resource       Resource?     @relation(fields: [resourceId], references: [id])
   assignedUser   User?         @relation("AssignedBookings", fields: [assignedUserId], references: [id])
+  refundTransaction RefundTransaction?
 
   @@index([appointmentId])
   @@index([userId])

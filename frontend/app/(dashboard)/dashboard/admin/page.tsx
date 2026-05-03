@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { authStorage } from "@/lib/auth";
 import { adminApi } from "@/lib/api";
+import { AdminRefundDashboard } from "@/components/refunds/AdminRefundDashboard";
 
 interface AdminStats {
   totalUsers: number;
@@ -290,6 +291,15 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-primary/10 bg-gradient-to-br from-primary/5 to-transparent shadow-sm">
+        <CardHeader>
+          <CardTitle>Refund Operations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AdminRefundDashboard />
+        </CardContent>
+      </Card>
 
       {/* Recent Activity */}
       <Card className="hover:shadow-md transition-shadow duration-200">

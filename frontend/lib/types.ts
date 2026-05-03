@@ -155,3 +155,79 @@ export interface Notification {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface RefundTimelineStep {
+  step: "REQUESTED" | "APPROVED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  time: string;
+}
+
+export interface RefundEligibilityResult {
+  eligible: boolean;
+  refundAmount: number;
+  originalAmount: number;
+  reason: string;
+  message?: string;
+  ruleApplied?: string;
+  breakdown?: {
+    originalAmount: number;
+    refundAmount: number;
+    processingFee: number;
+    finalAmount: number;
+    ruleApplied: string;
+  };
+  policy?: any;
+}
+
+export interface RefundPolicy {
+  id?: string;
+  organizationId?: string;
+  rules: any[];
+  specialRules?: any;
+  globalProcessingFee?: number;
+  requiresApproval?: boolean;
+  autoProcessAbove?: number | null;
+  allowAutoApproval?: boolean;
+  maxRefundRequestsPerBooking?: number;
+  maxRefundRequestsPerUserPerMonth?: number;
+  allowWalletCredits?: boolean;
+  version?: number;
+  fullRefundHours?: number;
+  partialRefundHours?: number | null;
+  partialRefundPercent?: number;
+  processingFee?: number;
+}
+
+export interface RefundTransaction {
+  id: string;
+  bookingId: string;
+  originalAmount?: number | null;
+  refundAmount?: number | null;
+  processingFee?: number;
+  gatewayFee?: number;
+  netAmount?: number | null;
+  status: "PENDING" | "APPROVED" | "PROCESSING" | "COMPLETED" | "FAILED" | "PARTIAL" | "CANCELLED" | "REJECTED" | "REQUIRES_MANUAL";
+  refundReason?: string | null;
+  reasonDetails?: string | null;
+  refundType?: "FULL" | "PARTIAL" | "CUSTOM";
+  requestedAt?: string;
+  approvedAt?: string | null;
+  processedAt?: string | null;
+  completedAt?: string | null;
+  failedAt?: string | null;
+  eligibilityMessage?: string | null;
+  ruleApplied?: string | null;
+  overrideAmount?: number | null;
+  emergencyRefund?: boolean;
+  lastError?: string | null;
+  retryCount?: number;
+  timeline?: RefundTimelineStep[];
+  statusHistory?: any[];
+  booking?: Booking;
+  auditLogs?: Array<{
+    id: string;
+    action: string;
+    role?: string | null;
+    ipAddress?: string | null;
+    createdAt: string;
+  }>;
+}

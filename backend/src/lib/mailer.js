@@ -359,6 +359,21 @@ async function sendNotificationEmail(email, notificationType, title, message, ac
   return await sendEmail(email, `${style.emoji} ${title}`, html);
 }
 
+/**
+ * Send OTP email for SIGNUP / LOGIN / PASSWORD_RESET
+ */
+async function sendOtpEmail(email, otpCode, purpose) {
+  const templates = {
+    SIGNUP: { subject: 'Verify Your Email - OTP: ' + otpCode, html: `<h2>Welcome!</h2><p>Your OTP: <strong>${otpCode}</strong></p><p>Valid for 10 minutes.</p>` },
+    LOGIN: { subject: 'Login OTP: ' + otpCode, html: `<h2>Login Verification</h2><p>Your OTP: <strong>${otpCode}</strong></p><p>Valid for 10 minutes.</p>` },
+    PASSWORD_RESET: { subject: 'Password Reset OTP: ' + otpCode, html: `<h2>Reset Password</h2><p>Your OTP: <strong>${otpCode}</strong></p><p>Valid for 10 minutes.</p>` }
+  };
+
+  const key = String(purpose);
+  const tpl = templates[key] || templates.LOGIN;
+  return await sendEmail(email, tpl.subject, tpl.html);
+}
+
 module.exports = {
   initializeMailer,
   sendEmail,
@@ -367,4 +382,5 @@ module.exports = {
   sendWelcomeEmail,
   sendMemberInvitationEmail,
   sendNotificationEmail,
+  sendOtpEmail,
 };

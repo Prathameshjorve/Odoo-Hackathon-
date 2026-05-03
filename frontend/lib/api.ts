@@ -202,6 +202,8 @@ export const api = new ApiClient(API_BASE_URL);
 export const authApi = {
   register: (data: { name: string; email: string; password: string; role?: string }) =>
     api.post("/auth/register", data),
+  registerOtp: (data: { name?: string; email: string; password?: string; role?: string; otpCode?: string }) =>
+    api.post("/auth/register-otp", data),
 
   login: (data: { email: string; password: string }): Promise<ApiResponse<LoginResponse>> =>
     api.post<LoginResponse>("/auth/login", data),
@@ -220,6 +222,22 @@ export const authApi = {
 
   requestPasswordReset: (email: string) =>
     api.post("/auth/request-password-reset", { email }),
+
+  // OTP-based flows
+  loginOtp: (data: { email: string; password?: string; otpCode?: string }) =>
+    api.post("/auth/login-otp", data),
+
+  forgotPasswordOtp: (data: { email: string; otpCode?: string; newPassword?: string }) =>
+    api.post("/auth/forgot-password-otp", data),
+
+  verifyForgotPasswordOtp: (data: { email: string; otpCode: string }) =>
+    api.post("/auth/verify-forgot-password-otp", data),
+
+  completeForgotPasswordReset: (data: { email: string; newPassword: string }) =>
+    api.post("/auth/complete-forgot-password-reset", data),
+
+  resendOtp: (data: { email: string; purpose: string }) =>
+    api.post("/auth/resend-otp", data),
 
   resetPassword: (token: string, email: string, newPassword: string) =>
     api.post("/auth/reset-password", { token, email, newPassword }),
@@ -361,6 +379,59 @@ export const bookingApi = {
 
   cancelBookingByOrganization: (token: string, bookingId: string) =>
     api.delete(`/bookings/${bookingId}/organization`, token),
+};
+
+export const refundApi = {
+  getEligibility: (token: string, bookingId: string, params?: { currentTime?: string; overrideAmount?: number; emergencyRefund?: boolean }) => {
+    const query = new URLSearchParams();
+    if (params?.currentTime) query.append("currentTime", params.currentTime);
+    if (params?.overrideAmount !== undefined) query.append("overrideAmount", String(params.overrideAmount));
+    if (params?.emergencyRefund !== undefined) query.append("emergencyRefund", String(params.emergencyRefund));
+    return api.get<RefundEligibilityResult>(`/bookings/refund-eligibility/${bookingId}${query.toString() ? `?${query.toString()}` : ""}`, token);
+  },
+
+  requestRefund: (token: string, bookingId: string, data: { reason?: string; overrideAmount?: number; emergencyRefund?: boolean; reasonDetails?: string; metadata?: any }) =>
+    api.post<RefundTransaction>(`/bookings/${bookingId}/refunds`, data, token),
+
+  getRefundStatus: (token: string, bookingId: string): Promise<ApiResponse<RefundTransaction>> =>
+    api.get<RefundTransaction>(`/bookings/${bookingId}/refunds`, token),
+
+  getRefundDetails: (token: string, refundId: string): Promise<ApiResponse<RefundTransaction>> =>
+    api.get<RefundTransaction>(`/organization/refunds/${refundId}`, token),
+
+  listRefunds: (token: string, params?: { organizationId?: string; status?: string; bookingId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.organizationId) query.append("organizationId", params.organizationId);
+    if (params?.status) query.append("status", params.status);
+    if (params?.bookingId) query.append("bookingId", params.bookingId);
+    return api.get<RefundTransaction[]>(`/organization/refunds${query.toString() ? `?${query.toString()}` : ""}`, token);
+  },
+
+  approveRefund: (token: string, refundId: string, data?: { note?: string; overrideAmount?: number; emergencyRefund?: boolean }) =>
+    api.put(`/organization/refunds/${refundId}/approve`, data || {}, token),
+
+  rejectRefund: (token: string, refundId: string, data?: { note?: string }) =>
+    api.put(`/organization/refunds/${refundId}/reject`, data || {}, token),
+
+  processRefund: (token: string, refundId: string, data?: { overrideAmount?: number; emergencyRefund?: boolean; overrideReason?: string }) =>
+    api.post(`/organization/refunds/${refundId}/process`, data || {}, token),
+
+  retryRefund: (token: string, refundId: string) =>
+    api.post(`/admin/refunds/${refundId}/retry`, {}, token),
+
+  getMetrics: (token: string, organizationId?: string) => {
+    const query = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+    return api.get(`/organization/refunds/metrics${query}`, token);
+  },
+
+  getPolicy: (token: string) =>
+    api.get<RefundPolicy>("/organization/refund-policy", token),
+
+  updatePolicy: (token: string, data: RefundPolicy) =>
+    api.put("/organization/refund-policy", data, token),
+
+  testPolicy: (token: string, booking: any, policy: RefundPolicy, currentTime?: string) =>
+    api.post("/organization/refund-policy/test", { booking, policy, currentTime }, token),
 };
 
 // Payments API functions

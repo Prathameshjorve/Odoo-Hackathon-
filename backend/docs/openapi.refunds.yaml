@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Refund API
+  version: 1.0.0
+  description: Enterprise refund workflow for bookings, policies, metrics, and webhook handling.
+servers:
+  - url: /api/v1
+paths:
+  /bookings/{bookingId}/refunds:
+    post:
+      summary: Request a refund
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund request accepted
+    get:
+      summary: Get refund status for a booking
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refund status
+  /refunds/{refundId}:
+    delete:
+      summary: Cancel a refund request
+      parameters:
+        - in: path
+          name: refundId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancelled
+  /organization/refunds:
+    get:
+      summary: List refunds for an organization
+      responses:
+        '200':
+          description: Refund list
+  /organization/refunds/{refundId}:
+    get:
+      summary: Get refund details
+      responses:
+        '200':
+          description: Refund details
+  /organization/refunds/{refundId}/approve:
+    put:
+      summary: Approve a refund
+      responses:
+        '200':
+          description: Approved
+  /organization/refunds/{refundId}/reject:
+    put:
+      summary: Reject a refund
+      responses:
+        '200':
+          description: Rejected
+  /organization/refunds/{refundId}/process:
+    post:
+      summary: Force process a refund
+      responses:
+        '200':
+          description: Processed
+  /organization/refunds/metrics:
+    get:
+      summary: Refund dashboard metrics
+      responses:
+        '200':
+          description: Metrics
+  /organization/refund-policy:
+    get:
+      summary: Get refund policy
+      responses:
+        '200':
+          description: Policy
+    put:
+      summary: Update refund policy
+      responses:
+        '200':
+          description: Updated
+  /organization/refund-policy/test:
+    post:
+      summary: Test refund policy rules
+      responses:
+        '200':
+          description: Policy test result
+  /webhooks/razorpay/refund:
+    post:
+      summary: Razorpay refund webhook
+      responses:
+        '200':
+          description: Webhook accepted

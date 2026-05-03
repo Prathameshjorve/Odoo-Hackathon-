@@ -20,6 +20,9 @@ const reminderRoutes = require('./routes/reminder');
 const paymentRoutes = require('./routes/payments');
 const paymentRoutesSimple = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
+const refundRoutes = require('./routes/refund');
+const { handleRazorpayRefundWebhook } = require('./webhooks/razorpayRefundWebhook');
+const { startRefundQueueWorker } = require('./workers/refundQueueWorker');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -66,6 +69,7 @@ app.use(cookieParser());
 
 // Initialize mailer
 initializeMailer();
+startRefundQueueWorker();
 
 // Initialize Socket.IO
 // initSocket(server);
@@ -102,6 +106,11 @@ app.use('/', paymentRoutes); // Payments and webhooks
 app.use('/api/payment', paymentRoutesSimple); // Simple direct payment routes
 app.use('/notifications', notificationRoutes);
 app.use('/reminders', reminderRoutes); // Reminder routes for n8n scheduler
+app.use('/api/v1', refundRoutes);
+app.use('/api', refundRoutes);
+
+// Razorpay refund webhook endpoint
+app.post('/webhooks/razorpay/refund', (req, res) => handleRazorpayRefundWebhook(req, res));
 
 // 404 handler
 app.use((req, res) => {

@@ -22,6 +22,8 @@ export function RegisterForm({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [orgLocation, setOrgLocation] = useState("");
@@ -35,12 +37,20 @@ export function RegisterForm({
     setError("");
 
     try {
-      const payload: any = {
-        name,
-        email,
-        password,
-        role,
-      };
+      // If OTP has not been requested yet, request it first (step 1)
+      if (!otpRequested) {
+        const payload: any = { name, email, role };
+        const response = await authApi.registerOtp(payload);
+        if (response.success) {
+          setOtpRequested(true);
+        } else {
+          setError(response.message || "Failed to request OTP");
+        }
+        return;
+      }
+
+      // OTP requested -> proceed to verify and create account (step 2)
+      const payload: any = { name, email, password, role, otpCode };
 
       if (role === "ORGANIZATION") {
         if (!orgName || !orgLocation) {
@@ -61,11 +71,11 @@ export function RegisterForm({
         };
       }
 
-      const response = await authApi.register(payload);
+      const response = await authApi.registerOtp(payload);
 
       if (response.success) {
-        // Redirect to verification page
-        router.push("/verify");
+        // Success - user created and tokens returned -> redirect to dashboard
+        router.push("/");
       } else {
         setError(response.message || "Registration failed");
       }
@@ -165,30 +175,49 @@ export function RegisterForm({
 
         {/* Password */}
         <Field>
-          <FieldLabel>Password</FieldLabel>
-          <div className="relative">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Create a password (min 8 characters)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              disabled={isPending}
-              className="transition-all duration-200 focus:ring-2 pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
+          {/* Show password and OTP fields only after OTP is requested */}
+          {otpRequested && (
+            <>
+              <Field>
+                <FieldLabel>OTP</FieldLabel>
+                <Input
+                  placeholder="Enter OTP"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  required
+                  disabled={isPending}
+                  className="transition-all duration-200 focus:ring-2"
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>Password</FieldLabel>
+                <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a password (min 8 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  disabled={isPending}
+                  className="transition-all duration-200 focus:ring-2 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+                </div>
+              </Field>
+            </>
+          )}
         </Field>
 
         {/* SUBMIT */}

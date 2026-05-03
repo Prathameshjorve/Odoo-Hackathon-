@@ -34,9 +34,11 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
-import { bookingApi } from "@/lib/api";
+import { bookingApi, refundApi } from "@/lib/api";
 import { authStorage } from "@/lib/auth";
 import { Booking } from "@/lib/types";
+import { RefundModal } from "@/components/refunds/RefundModal";
+import { RefundTracker } from "@/components/refunds/RefundTracker";
 
 const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -75,10 +77,36 @@ export default function UserBookingsList() {
     const [searchQuery, setSearchQuery] = React.useState("");
     const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(null);
     const [cancellingBookingId, setCancellingBookingId] = React.useState<string | null>(null);
+    const [selectedRefund, setSelectedRefund] = React.useState<any | null>(null);
+    const [showRefundModal, setShowRefundModal] = React.useState(false);
 
     React.useEffect(() => {
         fetchBookings();
     }, []);
+
+    React.useEffect(() => {
+        const fetchRefund = async () => {
+            if (!selectedBooking) {
+                setSelectedRefund(null);
+                return;
+            }
+
+            try {
+                const accessToken = authStorage.getAccessToken();
+                if (!accessToken) return;
+                const response = await refundApi.getRefundStatus(accessToken, selectedBooking.id);
+                if (response.success && response.data) {
+                    setSelectedRefund(response.data);
+                } else {
+                    setSelectedRefund(null);
+                }
+            } catch {
+                setSelectedRefund(null);
+            }
+        };
+
+        fetchRefund();
+    }, [selectedBooking]);
 
     const fetchBookings = async () => {
         try {
@@ -542,9 +570,24 @@ export default function UserBookingsList() {
                                 </div>
                             </div>
 
-                            {/* Cancel Button */}
-                            {selectedBooking.bookingStatus !== "CANCELLED" && selectedBooking.bookingStatus !== "COMPLETED" && (
+                            {selectedRefund && (
                                 <div className="border-t pt-4">
+                                    <RefundTracker refund={selectedRefund} />
+                                </div>
+                            )}
+
+                            {/* Cancel Button */}
+                            <div className="grid gap-3 border-t pt-4 sm:grid-cols-2">
+                                {selectedBooking.paymentStatus === "PAID" && selectedBooking.bookingStatus !== "CANCELLED" && selectedBooking.bookingStatus !== "COMPLETED" && (
+                                    <Button
+                                        variant="secondary"
+                                        className="w-full"
+                                        onClick={() => setShowRefundModal(true)}
+                                    >
+                                        Request Refund
+                                    </Button>
+                                )}
+                                {selectedBooking.bookingStatus !== "CANCELLED" && selectedBooking.bookingStatus !== "COMPLETED" && (
                                     <Button
                                         variant="destructive"
                                         className="w-full"
@@ -553,12 +596,21 @@ export default function UserBookingsList() {
                                     >
                                         {cancellingBookingId === selectedBooking.id ? "Cancelling..." : "Cancel Booking"}
                                     </Button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     )}
                 </DialogContent>
             </Dialog>
+
+            {selectedBooking && (
+                <RefundModal
+                    booking={selectedBooking}
+                    open={showRefundModal}
+                    onOpenChange={setShowRefundModal}
+                    onSubmitted={(refund) => setSelectedRefund(refund)}
+                />
+            )}
         </div>
     );
 }
